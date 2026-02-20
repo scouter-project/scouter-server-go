@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/zbum/scouter-server-go/internal/db/compress"
 	"github.com/zbum/scouter-server-go/internal/protocol"
 	"github.com/zbum/scouter-server-go/internal/util"
 )
@@ -188,9 +189,13 @@ func (w *XLogWR) ReadByTime(date string, stime, etime int64, handler func(data [
 
 	err := container.index.timeIndex.Read(stime, etime, func(timeMs int64, dataPos []byte) bool {
 		offset := protocol.BigEndian.Int5(dataPos)
-		data, err := container.data.Read(offset)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
-			return handler(data)
+			cont := handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
+			return cont
 		}
 		return true
 	})
@@ -210,9 +215,13 @@ func (w *XLogWR) ReadFromEndTime(date string, stime, etime int64, handler func(d
 
 	err := container.index.timeIndex.ReadFromEnd(stime, etime, func(timeMs int64, dataPos []byte) bool {
 		offset := protocol.BigEndian.Int5(dataPos)
-		data, err := container.data.Read(offset)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
-			return handler(data)
+			cont := handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
+			return cont
 		}
 		return true
 	})
@@ -237,7 +246,7 @@ func (w *XLogWR) GetByTxid(date string, txid int64) ([]byte, bool, error) {
 		return nil, true, nil
 	}
 
-	data, err := container.data.Read(offset)
+	data, _, err := container.data.Read(offset)
 	return data, true, err
 }
 
@@ -257,9 +266,12 @@ func (w *XLogWR) ReadByGxid(date string, gxid int64, handler func(data []byte)) 
 	}
 
 	for _, offset := range offsets {
-		data, err := container.data.Read(offset)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
 			handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
 		}
 	}
 	return true, nil

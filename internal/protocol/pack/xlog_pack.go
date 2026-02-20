@@ -64,7 +64,8 @@ func (p *XLogPack) PackType() byte {
 
 // ReadXLogFilterFields extracts only ObjHash and Elapsed from serialized XLogPack data
 // by parsing just the first 7 fields instead of all 42+ fields.
-// This avoids the cost of full deserialization when only filter fields are needed.
+// Uses zero-copy ReadBlobRef to avoid allocating a copy of the inner blob,
+// since we only need to read a few fields from the beginning.
 func ReadXLogFilterFields(data []byte) (objHash int32, elapsed int32, err error) {
 	din := protocol.NewDataInputX(data)
 
@@ -73,8 +74,8 @@ func ReadXLogFilterFields(data []byte) (objHash int32, elapsed int32, err error)
 		return
 	}
 
-	// Read blob to get inner buffer
-	blob, err := din.ReadBlob()
+	// Read blob reference (zero-copy — no allocation)
+	blob, err := din.ReadBlobRef()
 	if err != nil {
 		return
 	}

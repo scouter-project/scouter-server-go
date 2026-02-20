@@ -91,7 +91,7 @@ func BenchmarkXLogData_Read_Sequential(b *testing.B) {
 	b.SetBytes(256)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := xd.Read(offsets[i%n]); err != nil {
+		if _, _, err := xd.Read(offsets[i%n]); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -129,7 +129,7 @@ func BenchmarkXLogData_Read_Random(b *testing.B) {
 	b.SetBytes(256)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if _, err := xd.Read(shuffled[i%n]); err != nil {
+		if _, _, err := xd.Read(shuffled[i%n]); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -163,7 +163,7 @@ func BenchmarkXLogData_Read_Concurrent(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		idx := 0
 		for pb.Next() {
-			if _, err := xd.Read(offsets[idx%n]); err != nil {
+			if _, _, err := xd.Read(offsets[idx%n]); err != nil {
 				b.Fatal(err)
 			}
 			idx++

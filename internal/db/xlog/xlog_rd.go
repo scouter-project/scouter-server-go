@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/zbum/scouter-server-go/internal/db/compress"
 	"github.com/zbum/scouter-server-go/internal/protocol"
 )
 
@@ -82,9 +83,13 @@ func (r *XLogRD) ReadByTime(date string, stime, etime int64, handler func(data [
 
 	return container.index.timeIndex.Read(stime, etime, func(timeMs int64, dataPos []byte) bool {
 		offset := protocol.BigEndian.Int5(dataPos)
-		data, err := container.data.Read(offset)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
-			return handler(data)
+			cont := handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
+			return cont
 		}
 		return true
 	})
@@ -108,7 +113,9 @@ func (r *XLogRD) GetByTxid(date string, txid int64) ([]byte, error) {
 		return nil, nil // Not found
 	}
 
-	return container.data.Read(offset)
+	// Single record lookups: don't pool — caller may retain the data
+	data, _, err := container.data.Read(offset)
+	return data, err
 }
 
 // ReadByGxid reads all XLog entries related to a global transaction ID.
@@ -127,9 +134,12 @@ func (r *XLogRD) ReadByGxid(date string, gxid int64, handler func(data []byte)) 
 	}
 
 	for _, offset := range offsets {
-		data, err := container.data.Read(offset)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
 			handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
 		}
 	}
 
@@ -149,9 +159,13 @@ func (r *XLogRD) ReadFromEndTime(date string, stime, etime int64, handler func(d
 
 	return container.index.timeIndex.ReadFromEnd(stime, etime, func(timeMs int64, dataPos []byte) bool {
 		offset := protocol.BigEndian.Int5(dataPos)
-		data, err := container.data.Read(offset)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
-			return handler(data)
+			cont := handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
+			return cont
 		}
 		return true
 	})

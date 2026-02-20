@@ -247,6 +247,46 @@ func (d *DataInputX) ReadBlob() ([]byte, error) {
 	}
 }
 
+// ReadBlobRef returns a zero-copy slice of the underlying buffer for blob data.
+// In buffer mode, this avoids allocating a new []byte — the returned slice
+// aliases d.buf directly. Callers must not retain the slice past the
+// lifetime of the DataInputX's buffer.
+// In stream mode, falls back to ReadBlob (allocating copy).
+func (d *DataInputX) ReadBlobRef() ([]byte, error) {
+	if d.reader != nil {
+		return d.ReadBlob()
+	}
+	b, err := d.ReadByte()
+	if err != nil {
+		return nil, err
+	}
+	var length int
+	switch b {
+	case 0:
+		return []byte{}, nil
+	case 255:
+		l, err := d.ReadUint16()
+		if err != nil {
+			return nil, err
+		}
+		length = int(l)
+	case 254:
+		l, err := d.ReadInt32()
+		if err != nil {
+			return nil, err
+		}
+		length = int(l)
+	default:
+		length = int(b)
+	}
+	if d.offset+length > len(d.buf) {
+		return nil, ErrEOF
+	}
+	ref := d.buf[d.offset : d.offset+length]
+	d.offset += length
+	return ref, nil
+}
+
 func (d *DataInputX) ReadText() (string, error) {
 	b, err := d.ReadBlob()
 	if err != nil {

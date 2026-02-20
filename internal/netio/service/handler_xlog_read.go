@@ -74,7 +74,7 @@ func RegisterXLogReadHandlers(r *Registry, xlogRD *xlog.XLogRD, profileRD *profi
 		date := param.GetText("date")
 		stime := param.GetLong("stime")
 		etime := param.GetLong("etime")
-		max := param.GetInt("max")
+		maxCount := param.GetInt("max")
 		rev := param.GetBoolean("reverse")
 		limitTime := param.GetInt("limit")
 
@@ -83,8 +83,8 @@ func RegisterXLogReadHandlers(r *Registry, xlogRD *xlog.XLogRD, profileRD *profi
 		if cfg := config.Get(); cfg != nil {
 			limit = int32(cfg.XLogPasttimeLowerBoundMs())
 		}
-		if int32(limitTime) > limit {
-			limit = int32(limitTime)
+		if limitTime > limit {
+			limit = limitTime
 		}
 
 		// Build objHash filter if present
@@ -98,10 +98,34 @@ func RegisterXLogReadHandlers(r *Registry, xlogRD *xlog.XLogRD, profileRD *profi
 			}
 		}
 
+		// Server-enforced maximum count — prevents unbounded full-table scans
+		// that cause multi-GB memory spikes from per-record allocations.
+		serverMax := 100000
+		if cfg := config.Get(); cfg != nil {
+			serverMax = cfg.XLogPasttimeMaxCount()
+		}
+		if maxCount <= 0 || int(maxCount) > serverMax {
+			maxCount = int32(serverMax)
+		}
+
+		// Server-enforced scan limit — bounds total records examined
+		// (including filtered-out ones). When a selective filter causes most
+		// records to be skipped, the scan count can be orders of magnitude
+		// higher than the result count, leading to multi-GB GC pressure.
+		maxScan := 500000
+		if cfg := config.Get(); cfg != nil {
+			maxScan = cfg.XLogPasttimeMaxScan()
+		}
+
 		cnt := 0
+		scanCnt := 0
 		needFilter := len(objHashFilter) > 0 || limit > 0
 		dataHandler := func(data []byte) bool {
-			if max > 0 && cnt >= int(max) {
+			if cnt >= int(maxCount) {
+				return false
+			}
+			scanCnt++
+			if scanCnt > maxScan {
 				return false
 			}
 			if needFilter {

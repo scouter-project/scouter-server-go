@@ -607,6 +607,20 @@ func (c *Config) XLogPasttimeLowerBoundMs() int {
 	return c.GetInt("xlog_pasttime_lower_bound_ms", 0)
 }
 
+// XLogPasttimeMaxCount returns xlog_pasttime_max_count (default 100000).
+// Server-enforced ceiling for TRANX_LOAD_TIME_GROUP queries.
+func (c *Config) XLogPasttimeMaxCount() int {
+	return c.GetInt("xlog_pasttime_max_count", 100000)
+}
+
+// XLogPasttimeMaxScan returns xlog_pasttime_max_scan (default 500000).
+// Limits the total number of records examined (including filtered-out ones)
+// during a past-time query. This prevents unbounded memory growth when
+// a selective filter causes millions of records to be scanned.
+func (c *Config) XLogPasttimeMaxScan() int {
+	return c.GetInt("xlog_pasttime_max_scan", 500000)
+}
+
 // ProfileQueueSize returns profile_queue_size (default 1000).
 func (c *Config) ProfileQueueSize() int {
 	return c.GetInt("profile_queue_size", 1000)

@@ -54,27 +54,36 @@ func (f *IndexTimeFile) Put(timeMs int64, dataPos []byte) (int64, error) {
 }
 
 func (f *IndexTimeFile) getSecAll(timeMs int64) ([]TimeToData, error) {
-	if timeMs <= 0 {
-		return nil, errors.New("invalid key")
+	items := make([]TimeToData, 0, 16)
+	if err := f.getSecAllInto(timeMs, &items); err != nil {
+		return nil, err
 	}
-	var items []TimeToData
+	return items, nil
+}
+
+// getSecAllInto appends records for a time bucket into the provided slice,
+// avoiding per-bucket slice allocation when called from Read/ReadFromEnd loops.
+func (f *IndexTimeFile) getSecAllInto(timeMs int64, items *[]TimeToData) error {
+	if timeMs <= 0 {
+		return errors.New("invalid key")
+	}
 	pos := f.timeBlockHash.Get(timeMs)
 	for pos > 0 {
 		r, err := f.keyFile.GetRecord(pos)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if !r.Deleted {
 			t := protocol.BigEndian.Int64(r.TimeKey)
-			items = append(items, TimeToData{Time: t, DataPos: r.DataPos})
+			*items = append(*items, TimeToData{Time: t, DataPos: r.DataPos})
 		}
 		pos = r.PrevPos
 	}
 	// Sort by time ascending
-	sort.Slice(items, func(i, j int) bool {
-		return items[i].Time < items[j].Time
+	sort.Slice(*items, func(i, j int) bool {
+		return (*items)[i].Time < (*items)[j].Time
 	})
-	return items, nil
+	return nil
 }
 
 func (f *IndexTimeFile) GetDirect(pos int64) (*TimeToData, error) {
@@ -120,15 +129,17 @@ func (f *IndexTimeFile) Delete(timeMs int64) (int, error) {
 
 // Read iterates forward through time buckets from stime to etime (500ms increments).
 // Handler returns false to stop iteration early.
+// Uses a pre-allocated buffer to avoid per-bucket slice allocation.
 func (f *IndexTimeFile) Read(stime int64, etime int64, handler func(time int64, dataPos []byte) bool) error {
 	t := stime
+	items := make([]TimeToData, 0, 64)
 	for i := 0; i < util.SecondsPerDay*2 && t <= etime; i++ {
 		if f.timeBlockHash.Get(t) == 0 {
 			t += 500
 			continue
 		}
-		items, err := f.getSecAll(t)
-		if err != nil {
+		items = items[:0]
+		if err := f.getSecAllInto(t, &items); err != nil {
 			return err
 		}
 		for _, item := range items {
@@ -143,15 +154,17 @@ func (f *IndexTimeFile) Read(stime int64, etime int64, handler func(time int64, 
 
 // ReadFromEnd iterates backward through time buckets from etime to stime.
 // Handler returns false to stop iteration early.
+// Uses a pre-allocated buffer to avoid per-bucket slice allocation.
 func (f *IndexTimeFile) ReadFromEnd(stime int64, etime int64, handler func(time int64, dataPos []byte) bool) error {
 	t := etime
+	items := make([]TimeToData, 0, 64)
 	for i := 0; i < util.SecondsPerDay*2 && stime <= t; i++ {
 		if f.timeBlockHash.Get(t) == 0 {
 			t -= 500
 			continue
 		}
-		items, err := f.getSecAll(t)
-		if err != nil {
+		items = items[:0]
+		if err := f.getSecAllInto(t, &items); err != nil {
 			return err
 		}
 		for j := len(items) - 1; j >= 0; j-- {

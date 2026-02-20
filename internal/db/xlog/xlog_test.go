@@ -123,7 +123,7 @@ func TestXLogDataWriteRead(t *testing.T) {
 	}
 
 	// Read back
-	readData, err := xdata.Read(offset)
+	readData, _, err := xdata.Read(offset)
 	if err != nil {
 		t.Fatalf("Read failed: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestXLogDataWriteRead(t *testing.T) {
 		t.Fatalf("Second flush failed: %v", err)
 	}
 
-	readData2, err := xdata.Read(offset2)
+	readData2, _, err := xdata.Read(offset2)
 	if err != nil {
 		t.Fatalf("Second read failed: %v", err)
 	}
