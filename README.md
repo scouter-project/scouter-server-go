@@ -61,7 +61,7 @@ make help
 | UDP 포트 | 6100 | 에이전트 데이터 수신 |
 | TCP 포트 | 6100 | 에이전트/클라이언트 연결 |
 | HTTP 포트 | 6180 | REST API |
-| 데이터 디렉토리 | `./data` | 저장소 경로 (`SCOUTER_DATA_DIR`) |
+| 데이터 디렉토리 | `./database` | 저장소 경로 (`db_dir`) |
 
 ## Run
 
