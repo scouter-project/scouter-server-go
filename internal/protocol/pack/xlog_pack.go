@@ -1,8 +1,18 @@
 package pack
 
 import (
+	"sync"
+
 	"github.com/zbum/scouter-server-go/internal/protocol"
 )
+
+// xlogWritePool reuses DataOutputX buffers for XLogPack.Write serialization.
+// A typical XLogPack serializes to ~200-400 bytes; 512 avoids reallocation.
+var xlogWritePool = sync.Pool{
+	New: func() any {
+		return protocol.NewDataOutputXWithSize(512)
+	},
+}
 
 // XLogType constants matching Java's XLogTypes.
 const (
@@ -116,7 +126,7 @@ func ReadXLogFilterFields(data []byte) (objHash int32, elapsed int32, err error)
 
 // Write serializes the XLogPack using blob wrapping.
 func (p *XLogPack) Write(o *protocol.DataOutputX) {
-	inner := protocol.NewDataOutputX()
+	inner := xlogWritePool.Get().(*protocol.DataOutputX)
 
 	// Write all fields to inner buffer
 	inner.WriteDecimal(p.EndTime)
@@ -165,6 +175,10 @@ func (p *XLogPack) Write(o *protocol.DataOutputX) {
 
 	// Write inner buffer as blob
 	o.WriteBlob(inner.ToByteArray())
+
+	// Return to pool for reuse
+	inner.Reset()
+	xlogWritePool.Put(inner)
 }
 
 // Read deserializes the XLogPack from blob-wrapped data.

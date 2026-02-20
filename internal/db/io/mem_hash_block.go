@@ -16,7 +16,7 @@ const (
 // MemHashBlock is an in-memory hash bucket table backed by a .hfile on disk.
 // It stores 5-byte (long5) values in a hash-addressed bucket array.
 type MemHashBlock struct {
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	path     string
 	file     string
 	buf      []byte
@@ -66,15 +66,15 @@ func (m *MemHashBlock) offset(keyHash int32) int {
 }
 
 func (m *MemHashBlock) Get(keyHash int32) int64 {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	pos := m.offset(keyHash)
 	return protocol.BigEndian.Int5(m.buf[pos:])
 }
 
 func (m *MemHashBlock) Count() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.count
 }
 
@@ -86,13 +86,12 @@ func (m *MemHashBlock) addCount(n int) {
 func (m *MemHashBlock) Put(keyHash int32, value int64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	b := protocol.BigEndian.Bytes5(value)
 	pos := m.offset(keyHash)
 
 	if protocol.BigEndian.Int5(m.buf[pos:]) == 0 {
 		m.addCount(1)
 	}
-	copy(m.buf[pos:], b)
+	protocol.BigEndian.PutInt5(m.buf[pos:], value)
 	m.dirty = true
 }
 
@@ -107,8 +106,8 @@ func (m *MemHashBlock) Flush() {
 }
 
 func (m *MemHashBlock) IsDirty() bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.dirty
 }
 

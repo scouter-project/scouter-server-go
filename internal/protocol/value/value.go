@@ -75,11 +75,60 @@ func CreateValue(typeCode byte) (Value, error) {
 }
 
 func WriteValue(o *protocol.DataOutputX, v Value) {
-	if v == nil {
+	if isNilValue(v) {
 		v = &NullValue{}
 	}
 	o.WriteByte(v.ValueType())
 	v.Write(o)
+}
+
+// isNilValue checks whether a Value interface is nil or holds a nil pointer.
+// In Go, a nil *T stored in an interface is non-nil (v == nil is false),
+// but calling methods that access fields will panic with nil pointer dereference.
+func isNilValue(v Value) bool {
+	if v == nil {
+		return true
+	}
+	// Type-switch on concrete pointer types that may be nil.
+	// This avoids reflect and covers all known Value implementations.
+	switch v := v.(type) {
+	case *MapValue:
+		return v == nil
+	case *ListValue:
+		return v == nil
+	case *NullValue:
+		return v == nil
+	case *BooleanValue:
+		return v == nil
+	case *DecimalValue:
+		return v == nil
+	case *FloatValue:
+		return v == nil
+	case *DoubleValue:
+		return v == nil
+	case *DoubleSummary:
+		return v == nil
+	case *LongSummary:
+		return v == nil
+	case *TextValue:
+		return v == nil
+	case *TextHashValue:
+		return v == nil
+	case *BlobValue:
+		return v == nil
+	case *IP4Value:
+		return v == nil
+	case *IntArray:
+		return v == nil
+	case *FloatArray:
+		return v == nil
+	case *TextArray:
+		return v == nil
+	case *LongArray:
+		return v == nil
+	default:
+		return false
+	}
 }
 
 func ReadValue(d *protocol.DataInputX) (Value, error) {

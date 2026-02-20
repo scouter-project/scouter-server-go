@@ -60,21 +60,21 @@ func (bigEndian) PutInt64(b []byte, v int64) {
 
 // Bytes5 returns a new 5-byte big-endian representation of v.
 func (e bigEndian) Bytes5(v int64) []byte {
-	b := make([]byte, 5)
-	e.PutInt5(b, v)
-	return b
+	var b [5]byte
+	e.PutInt5(b[:], v)
+	return b[:]
 }
 
 // Bytes4 returns a new 4-byte big-endian representation of v.
 func (e bigEndian) Bytes4(v int32) []byte {
-	b := make([]byte, 4)
-	e.PutInt32(b, v)
-	return b
+	var b [4]byte
+	e.PutInt32(b[:], v)
+	return b[:]
 }
 
 // Bytes8 returns a new 8-byte big-endian representation of v.
 func (e bigEndian) Bytes8(v int64) []byte {
-	b := make([]byte, 8)
-	e.PutInt64(b, v)
-	return b
+	var b [8]byte
+	e.PutInt64(b[:], v)
+	return b[:]
 }

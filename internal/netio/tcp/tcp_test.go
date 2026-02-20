@@ -484,9 +484,16 @@ func TestTCP_MultipleCommands(t *testing.T) {
 
 	count := 0
 	for {
-		flag, _ = din.ReadByte()
+		var readErr error
+		flag, readErr = din.ReadByte()
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
 		if flag == protocol.FLAG_NO_NEXT {
 			break
+		}
+		if flag != protocol.FLAG_HAS_NEXT {
+			t.Fatalf("unexpected flag %d", flag)
 		}
 		pack.ReadPack(din)
 		count++

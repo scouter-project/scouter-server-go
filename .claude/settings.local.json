@@ -58,7 +58,16 @@
       "Bash(gopls check:*)",
       "Bash(/Users/nhn/IdeaProjects/scouter.server.go/dist/scouter-server:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(go mod init:*)",
+      "Bash(git -C /Users/nhn/IdeaProjects/scouter.server.go remote -v)",
+      "Bash(git -C /Users/nhn/IdeaProjects/scouter.server.go tag --list)",
+      "Bash(gh --version:*)",
+      "Bash(chmod:*)",
+      "Bash(# Check Java scouter server jar size for comparison ls -lh /Users/nhn/IdeaProjects/scouter/scouter.server/target/*.jar || find /Users/nhn/IdeaProjects/scouter/scouter.deploy/target -name \"\"*server*\"\" -type f)",
+      "Bash(# Check Java dependencies total size \\(lib directory in deploy\\) find /Users/nhn/IdeaProjects/scouter/scouter.deploy/target -name \"\"lib\"\" -type d)",
+      "Bash(while read d)",
+      "Bash(do du -sh \"$d\")"
     ]
   }
 }

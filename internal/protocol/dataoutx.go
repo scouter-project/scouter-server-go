@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	INT3MinValue  = int32(-8388608)   // 0xff800000 sign-extended
-	INT3MaxValue  = int32(8388607)    // 0x007fffff
+	INT3MinValue  = int32(-8388608)      // 0xff800000 sign-extended
+	INT3MaxValue  = int32(8388607)       // 0x007fffff
 	LONG5MinValue = int64(-549755813888) // 0xffffff8000000000 sign-extended
 	LONG5MaxValue = int64(549755813887)  // 0x0000007fffffffff
 )
@@ -17,6 +17,7 @@ type DataOutputX struct {
 	buf     []byte
 	written int
 	writer  io.Writer // optional: when set, writes to stream instead of buffer
+	scratch [8]byte   // reusable scratch buffer — already on heap with the struct, avoids per-call allocation
 }
 
 func NewDataOutputX() *DataOutputX {
@@ -34,6 +35,12 @@ func NewDataOutputXStream(w io.Writer) *DataOutputX {
 
 func (o *DataOutputX) ToByteArray() []byte {
 	return o.buf
+}
+
+// Reset clears the buffer for reuse (e.g. from sync.Pool) without reallocating.
+func (o *DataOutputX) Reset() {
+	o.buf = o.buf[:0]
+	o.written = 0
 }
 
 func (o *DataOutputX) Size() int {
@@ -64,7 +71,8 @@ func (o *DataOutputX) Write(b []byte) *DataOutputX {
 
 func (o *DataOutputX) WriteByte(v byte) *DataOutputX {
 	if o.writer != nil {
-		o.writer.Write([]byte{v})
+		o.scratch[0] = v
+		o.writer.Write(o.scratch[:1])
 		o.written++
 		return o
 	}
@@ -83,27 +91,55 @@ func (o *DataOutputX) WriteBoolean(v bool) *DataOutputX {
 }
 
 func (o *DataOutputX) WriteInt16(v int16) *DataOutputX {
-	b := make([]byte, 2)
-	binary.BigEndian.PutUint16(b, uint16(v))
-	return o.Write(b)
+	u := uint16(v)
+	if o.writer != nil {
+		binary.BigEndian.PutUint16(o.scratch[:2], u)
+		o.writer.Write(o.scratch[:2])
+		o.written += 2
+		return o
+	}
+	o.buf = append(o.buf, byte(u>>8), byte(u))
+	o.written += 2
+	return o
 }
 
 func (o *DataOutputX) WriteUint16(v uint16) *DataOutputX {
-	b := make([]byte, 2)
-	binary.BigEndian.PutUint16(b, v)
-	return o.Write(b)
+	if o.writer != nil {
+		binary.BigEndian.PutUint16(o.scratch[:2], v)
+		o.writer.Write(o.scratch[:2])
+		o.written += 2
+		return o
+	}
+	o.buf = append(o.buf, byte(v>>8), byte(v))
+	o.written += 2
+	return o
 }
 
 func (o *DataOutputX) WriteInt32(v int32) *DataOutputX {
-	b := make([]byte, 4)
-	binary.BigEndian.PutUint32(b, uint32(v))
-	return o.Write(b)
+	u := uint32(v)
+	if o.writer != nil {
+		binary.BigEndian.PutUint32(o.scratch[:4], u)
+		o.writer.Write(o.scratch[:4])
+		o.written += 4
+		return o
+	}
+	o.buf = append(o.buf, byte(u>>24), byte(u>>16), byte(u>>8), byte(u))
+	o.written += 4
+	return o
 }
 
 func (o *DataOutputX) WriteInt64(v int64) *DataOutputX {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(v))
-	return o.Write(b)
+	u := uint64(v)
+	if o.writer != nil {
+		binary.BigEndian.PutUint64(o.scratch[:8], u)
+		o.writer.Write(o.scratch[:8])
+		o.written += 8
+		return o
+	}
+	o.buf = append(o.buf, byte(u>>56), byte(u>>48), byte(u>>40), byte(u>>32),
+		byte(u>>24), byte(u>>16), byte(u>>8), byte(u))
+	o.written += 8
+	return o
 }
 
 func (o *DataOutputX) WriteFloat32(v float32) *DataOutputX {
@@ -115,15 +151,27 @@ func (o *DataOutputX) WriteFloat64(v float64) *DataOutputX {
 }
 
 func (o *DataOutputX) WriteInt3(v int32) *DataOutputX {
-	b := make([]byte, 3)
-	BigEndian.PutInt3(b, v)
-	return o.Write(b)
+	if o.writer != nil {
+		BigEndian.PutInt3(o.scratch[:3], v)
+		o.writer.Write(o.scratch[:3])
+		o.written += 3
+		return o
+	}
+	o.buf = append(o.buf, byte(v>>16), byte(v>>8), byte(v))
+	o.written += 3
+	return o
 }
 
 func (o *DataOutputX) WriteLong5(v int64) *DataOutputX {
-	b := make([]byte, 5)
-	BigEndian.PutInt5(b, v)
-	return o.Write(b)
+	if o.writer != nil {
+		BigEndian.PutInt5(o.scratch[:5], v)
+		o.writer.Write(o.scratch[:5])
+		o.written += 5
+		return o
+	}
+	o.buf = append(o.buf, byte(v>>32), byte(v>>24), byte(v>>16), byte(v>>8), byte(v))
+	o.written += 5
+	return o
 }
 
 func (o *DataOutputX) WriteDecimal(v int64) *DataOutputX {
@@ -240,7 +288,6 @@ func (o *DataOutputX) WriteDecimalArray(v []int64) *DataOutputX {
 	}
 	return o
 }
-
 
 func (o *DataOutputX) WriteDecimalIntArray(v []int32) *DataOutputX {
 	if v == nil {
