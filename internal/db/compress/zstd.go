@@ -6,6 +6,16 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
+// decodePool reuses buffers for zstd DecodeAll output to reduce GC pressure.
+// Past XLog queries can decompress millions of records; without pooling,
+// each DecodeAll allocates a new ~400B buffer that becomes immediate garbage.
+var decodePool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 0, 512)
+		return b
+	},
+}
+
 const (
 	flagNewFormat byte = 0x00
 	compTypeRaw   byte = 0x00
@@ -66,9 +76,25 @@ func (p *Pool) Decode(body []byte) ([]byte, error) {
 	case compTypeRaw:
 		return body[2:], nil
 	case compTypeZstd:
-		return p.decoder.DecodeAll(body[2:], nil)
+		buf := decodePool.Get().([]byte)
+		decoded, err := p.decoder.DecodeAll(body[2:], buf[:0])
+		if err != nil {
+			decodePool.Put(buf[:0])
+			return nil, err
+		}
+		return decoded, nil
 	default:
 		return body[2:], nil
+	}
+}
+
+// RecycleDecoded returns a buffer obtained from Decode back to the pool.
+// Call this after you are done with the decoded slice (e.g. after writing
+// it to a TCP stream). Only call for zstd-compressed data; raw/legacy
+// buffers must not be recycled since they alias the input body.
+func RecycleDecoded(b []byte) {
+	if b != nil {
+		decodePool.Put(b[:0])
 	}
 }
 

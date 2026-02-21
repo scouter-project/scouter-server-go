@@ -567,6 +567,32 @@ func (c *Config) MgrTextDbDailyUaEnabled() bool {
 	return c.GetBool("mgr_text_db_daily_ua_enabled", false)
 }
 
+// MgrTextDbIndexMB returns the hash index size in MB for a given text div.
+// Matches Java's per-type configuration: _mgr_text_db_index_{type}_mb.
+func (c *Config) MgrTextDbIndexMB(div string) int {
+	switch div {
+	case "service":
+		return c.GetInt("_mgr_text_db_index_service_mb", 1)
+	case "apicall":
+		return c.GetInt("_mgr_text_db_index_api_mb", 1)
+	case "ua":
+		return c.GetInt("_mgr_text_db_index_ua_mb", 1)
+	case "login":
+		return c.GetInt("_mgr_text_db_index_login_mb", 1)
+	case "desc":
+		return c.GetInt("_mgr_text_db_index_desc_mb", 1)
+	case "hmsg":
+		return c.GetInt("_mgr_text_db_index_hmsg_mb", 1)
+	default:
+		return c.GetInt("_mgr_text_db_index_default_mb", 1)
+	}
+}
+
+// MgrTextDbDailyIndexMB returns _mgr_text_db_daily_index_mb (default 1).
+func (c *Config) MgrTextDbDailyIndexMB() int {
+	return c.GetInt("_mgr_text_db_daily_index_mb", 1)
+}
+
 // ---------------------------------------------------------------------------
 // XLog / Profile queue
 // ---------------------------------------------------------------------------
@@ -579,6 +605,20 @@ func (c *Config) XLogRealtimeLowerBoundMs() int {
 // XLogPasttimeLowerBoundMs returns xlog_pasttime_lower_bound_ms (default 0).
 func (c *Config) XLogPasttimeLowerBoundMs() int {
 	return c.GetInt("xlog_pasttime_lower_bound_ms", 0)
+}
+
+// XLogPasttimeMaxCount returns xlog_pasttime_max_count (default 100000).
+// Server-enforced ceiling for TRANX_LOAD_TIME_GROUP queries.
+func (c *Config) XLogPasttimeMaxCount() int {
+	return c.GetInt("xlog_pasttime_max_count", 100000)
+}
+
+// XLogPasttimeMaxScan returns xlog_pasttime_max_scan (default 500000).
+// Limits the total number of records examined (including filtered-out ones)
+// during a past-time query. This prevents unbounded memory growth when
+// a selective filter causes millions of records to be scanned.
+func (c *Config) XLogPasttimeMaxScan() int {
+	return c.GetInt("xlog_pasttime_max_scan", 500000)
 }
 
 // ProfileQueueSize returns profile_queue_size (default 1000).

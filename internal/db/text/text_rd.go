@@ -5,13 +5,6 @@ import (
 	"sync"
 )
 
-// dailyTextTypes lists the text types that can use daily storage.
-var dailyTextTypes = map[string]bool{
-	"service": true,
-	"apicall": true,
-	"ua":      true,
-}
-
 // cacheKey uniquely identifies a cached text entry.
 type cacheKey struct {
 	Div  string
@@ -19,11 +12,12 @@ type cacheKey struct {
 }
 
 // TextRD provides text reading with caching.
-// All text data is read from a single "00000000" directory.
+// Permanent text is read from "00000000/text/" using TextPermTable (per-div files with .data).
+// Daily text is read from per-date directories using TextTable (single file with composite key).
 type TextRD struct {
-	mu          sync.Mutex
+	mu          sync.RWMutex
 	baseDir     string
-	table       *TextTable
+	table       *TextPermTable
 	dailyTables map[string]*TextTable // date → TextTable for daily text
 	cache       map[cacheKey]string   // in-memory cache
 }
@@ -37,17 +31,27 @@ func NewTextRD(baseDir string) *TextRD {
 	}
 }
 
-// GetString retrieves a text string by div and hash.
+// GetString retrieves a text string by div and hash from permanent storage.
 // Checks cache first, then reads from the text table.
 func (r *TextRD) GetString(div string, hash int32) (string, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	// Check cache
 	key := cacheKey{
 		Div:  div,
 		Hash: hash,
 	}
+
+	// Fast path: check cache with read lock
+	r.mu.RLock()
+	if text, ok := r.cache[key]; ok {
+		r.mu.RUnlock()
+		return text, nil
+	}
+	r.mu.RUnlock()
+
+	// Slow path: write lock for cache miss
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// Double-check cache after acquiring write lock
 	if text, ok := r.cache[key]; ok {
 		return text, nil
 	}
@@ -72,14 +76,14 @@ func (r *TextRD) GetString(div string, hash int32) (string, error) {
 	return text, nil
 }
 
-// getTable returns the single text table, opening it if necessary.
-func (r *TextRD) getTable() (*TextTable, error) {
+// getTable returns the permanent text table, opening it if necessary.
+func (r *TextRD) getTable() (*TextPermTable, error) {
 	if r.table != nil {
 		return r.table, nil
 	}
 
-	dir := filepath.Join(r.baseDir, textDirName)
-	table, err := NewTextTable(dir)
+	dir := filepath.Join(r.baseDir, textDirName, "text")
+	table, err := NewTextPermTable(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -90,14 +94,24 @@ func (r *TextRD) getTable() (*TextTable, error) {
 
 // GetDailyString reads a text from a date-specific directory.
 func (r *TextRD) GetDailyString(date, div string, hash int32) (string, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	// Fast path: read lock to check existing table
+	r.mu.RLock()
+	table, ok := r.dailyTables[date]
+	r.mu.RUnlock()
 
-	table, err := r.getDailyTable(date)
-	if err != nil {
-		return "", err
+	if !ok {
+		// Slow path: write lock to create table
+		r.mu.Lock()
+		var err error
+		table, err = r.getDailyTable(date)
+		if err != nil {
+			r.mu.Unlock()
+			return "", err
+		}
+		r.mu.Unlock()
 	}
 
+	// table.Get has its own mutex
 	text, found, err := table.Get(div, hash)
 	if err != nil {
 		return "", err
@@ -109,6 +123,7 @@ func (r *TextRD) GetDailyString(date, div string, hash int32) (string, error) {
 }
 
 // getDailyTable returns the TextTable for a specific date, creating it if necessary.
+// Caller must hold the write lock.
 func (r *TextRD) getDailyTable(date string) (*TextTable, error) {
 	if table, ok := r.dailyTables[date]; ok {
 		return table, nil

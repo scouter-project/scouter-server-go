@@ -47,10 +47,22 @@ func (x *XLogData) Write(data []byte) (int64, error) {
 	return x.dataFile.Write(buf)
 }
 
+// bodyPool reuses read buffers for compressed data to reduce GC pressure.
+// When compression is enabled, the read buffer is temporary (Decode produces
+// a new decompressed buffer), so the read buffer can be recycled.
+var bodyPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 0, 512)
+		return b
+	},
+}
+
 // Read reads an XLog entry from the given offset.
 // Uses ReadAt (pread) for lock-free concurrent reads — multiple goroutines
 // can read simultaneously without mutex serialization.
-func (x *XLogData) Read(offset int64) ([]byte, error) {
+// The returned pooled flag indicates whether the caller should call
+// compress.RecycleDecoded(data) after use to return the buffer to the pool.
+func (x *XLogData) Read(offset int64) (data []byte, pooled bool, err error) {
 	x.initOnce.Do(func() {
 		f, err := os.Open(x.path)
 		if err != nil {
@@ -60,23 +72,46 @@ func (x *XLogData) Read(offset int64) ([]byte, error) {
 		x.raf = f
 	})
 	if x.initErr != nil {
-		return nil, x.initErr
+		return nil, false, x.initErr
 	}
 
 	// Read length header (2 bytes) via pread — no seek, no lock needed
 	var lenBuf [2]byte
 	if _, err := x.raf.ReadAt(lenBuf[:], offset); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	length := binary.BigEndian.Uint16(lenBuf[:])
+	length := int(binary.BigEndian.Uint16(lenBuf[:]))
+
+	// Get read buffer from pool
+	body := bodyPool.Get().([]byte)
+	if cap(body) >= length {
+		body = body[:length]
+	} else {
+		body = make([]byte, length)
+	}
 
 	// Read body via pread
-	body := make([]byte, length)
 	if _, err := x.raf.ReadAt(body, offset+2); err != nil {
-		return nil, err
+		bodyPool.Put(body[:0])
+		return nil, false, err
 	}
 
-	return compress.SharedPool().Decode(body)
+	decoded, err := compress.SharedPool().Decode(body)
+	if err != nil {
+		bodyPool.Put(body[:0])
+		return nil, false, err
+	}
+
+	// Determine if decoded buffer is from the decode pool (compressed case).
+	isCompressed := len(decoded) > 0 && len(body) > 0 && &decoded[0] != &body[0]
+
+	// Recycle the read buffer only if Decode produced a new buffer (compressed case).
+	// When uncompressed, decoded IS body — must not return it to the pool.
+	if isCompressed {
+		bodyPool.Put(body[:0])
+	}
+
+	return decoded, isCompressed, nil
 }
 
 // Flush flushes buffered data to disk.

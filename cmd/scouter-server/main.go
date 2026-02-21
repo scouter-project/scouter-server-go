@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/zbum/scouter-server-go/internal/config"
-	scoutercounter "github.com/zbum/scouter-server-go/internal/counter"
 	"github.com/zbum/scouter-server-go/internal/core"
 	"github.com/zbum/scouter-server-go/internal/core/cache"
+	scoutercounter "github.com/zbum/scouter-server-go/internal/counter"
 	"github.com/zbum/scouter-server-go/internal/db"
 	"github.com/zbum/scouter-server-go/internal/db/alert"
 	"github.com/zbum/scouter-server-go/internal/db/counter"
@@ -42,6 +42,11 @@ var (
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "version" {
 		fmt.Printf("scouter-server %s (built %s)\n", Version, BuildTime)
+		return
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "rehash" {
+		runRehash()
 		return
 	}
 
@@ -410,6 +415,61 @@ func main() {
 	}
 
 	slog.Info("Scouter Server stopped")
+}
+
+func runRehash() {
+	// --- Configuration ---
+	confFile := "./conf/scouter.conf"
+	if f := os.Getenv("SCOUTER_CONF"); f != "" {
+		confFile = f
+	}
+	cfg, err := config.Load(confFile)
+	if err != nil {
+		slog.Warn("Config load error, using defaults", "path", confFile, "error", err)
+		cfg, _ = config.Load("")
+	}
+
+	dataDir := cfg.DBDir()
+	if d := os.Getenv("SCOUTER_DATA_DIR"); d != "" {
+		dataDir = d
+	}
+
+	// Default: 128MB, override with --size flag
+	hashSizeMB := 128
+	for i, arg := range os.Args {
+		if arg == "--size" && i+1 < len(os.Args) {
+			if n, err := fmt.Sscanf(os.Args[i+1], "%d", &hashSizeMB); n != 1 || err != nil {
+				fmt.Fprintf(os.Stderr, "Invalid --size value: %s\n", os.Args[i+1])
+				os.Exit(1)
+			}
+		}
+	}
+
+	fmt.Printf("Rehash text index: dataDir=%s, newHashSizeMB=%d\n", dataDir, hashSizeMB)
+	fmt.Printf("This will rebuild .hfile and .kfile for all text divs.\n")
+	fmt.Printf("Old files will be backed up as .hfile.bak / .kfile.bak\n\n")
+
+	results, err := dbtext.RehashAll(dataDir, hashSizeMB)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Rehash failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("\n=== Rehash Complete ===\n")
+	for _, r := range results {
+		if r.Records < 0 {
+			fmt.Printf("  %-12s  (skipped - already at %dMB)\n", r.Div, r.HashMB)
+			continue
+		}
+		if r.Records == 0 {
+			fmt.Printf("  %-12s  (skipped - empty)\n", r.Div)
+			continue
+		}
+		avgOld := float64(r.Records) / float64(max(r.OldBucket, 1))
+		avgNew := float64(r.Records) / float64(max(r.NewBucket, 1))
+		fmt.Printf("  %-12s  records=%-12d  %dMB  chain: %.1f → %.1f  elapsed=%s\n",
+			r.Div, r.Records, r.HashMB, avgOld, avgNew, r.Elapsed.Round(time.Millisecond))
+	}
 }
 
 func printBanner() {

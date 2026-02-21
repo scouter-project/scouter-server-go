@@ -16,7 +16,7 @@ const (
 // MemHashBlock is an in-memory hash bucket table backed by a .hfile on disk.
 // It stores 5-byte (long5) values in a hash-addressed bucket array.
 type MemHashBlock struct {
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	path     string
 	file     string
 	buf      []byte
@@ -54,7 +54,7 @@ func (m *MemHashBlock) open() error {
 		}
 		m.bufSize = len(data) - memHeadReserved
 		m.buf = data
-		m.count = int(protocol.ToInt(m.buf, 4))
+		m.count = int(protocol.BigEndian.Int32(m.buf[4:]))
 	}
 	m.capacity = m.bufSize / keyLength
 	return nil
@@ -66,33 +66,32 @@ func (m *MemHashBlock) offset(keyHash int32) int {
 }
 
 func (m *MemHashBlock) Get(keyHash int32) int64 {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	pos := m.offset(keyHash)
-	return protocol.ToLong5(m.buf, pos)
+	return protocol.BigEndian.Int5(m.buf[pos:])
 }
 
-func (m *MemHashBlock) GetCount() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (m *MemHashBlock) Count() int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.count
 }
 
 func (m *MemHashBlock) addCount(n int) {
 	m.count += n
-	protocol.SetBytes(m.buf, 4, protocol.ToBytesInt(int32(m.count)))
+	protocol.BigEndian.PutInt32(m.buf[4:], int32(m.count))
 }
 
 func (m *MemHashBlock) Put(keyHash int32, value int64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	b := protocol.ToBytes5(value)
 	pos := m.offset(keyHash)
 
-	if protocol.ToLong5(m.buf, pos) == 0 {
+	if protocol.BigEndian.Int5(m.buf[pos:]) == 0 {
 		m.addCount(1)
 	}
-	copy(m.buf[pos:], b)
+	protocol.BigEndian.PutInt5(m.buf[pos:], value)
 	m.dirty = true
 }
 
@@ -107,8 +106,8 @@ func (m *MemHashBlock) Flush() {
 }
 
 func (m *MemHashBlock) IsDirty() bool {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	return m.dirty
 }
 

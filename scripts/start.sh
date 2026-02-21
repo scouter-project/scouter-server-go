@@ -19,6 +19,7 @@ fi
 mkdir -p "$LOG_DIR"
 
 export SCOUTER_CONF="$CONF"
+export GOMEMLIMIT="${GOMEMLIMIT:-1GiB}"
 
 nohup "$BINARY" > "$LOG_DIR/scouter-server.out" 2>&1 &
 echo $! > "$PID_FILE"

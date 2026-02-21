@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/zbum/scouter-server-go/internal/db/compress"
 	"github.com/zbum/scouter-server-go/internal/protocol"
 	"github.com/zbum/scouter-server-go/internal/util"
 )
@@ -25,7 +26,7 @@ const batchSize = 512 // max entries per batch drain
 // Entries are drained from the queue in batches and flushed together,
 // reducing the number of disk I/O syscalls under high write load.
 type XLogWR struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	baseDir string
 	days    map[string]*dayContainer
 	queue   chan *XLogEntry
@@ -179,18 +180,22 @@ func (w *XLogWR) process(entry *XLogEntry) {
 // in-memory index. Returns false if the writer has no container for the date.
 // Handler returns false to stop iteration early.
 func (w *XLogWR) ReadByTime(date string, stime, etime int64, handler func(data []byte) bool) (bool, error) {
-	w.mu.Lock()
+	w.mu.RLock()
 	container, exists := w.days[date]
-	w.mu.Unlock()
+	w.mu.RUnlock()
 	if !exists {
 		return false, nil
 	}
 
 	err := container.index.timeIndex.Read(stime, etime, func(timeMs int64, dataPos []byte) bool {
-		offset := protocol.ToLong5(dataPos, 0)
-		data, err := container.data.Read(offset)
+		offset := protocol.BigEndian.Int5(dataPos)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
-			return handler(data)
+			cont := handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
+			return cont
 		}
 		return true
 	})
@@ -201,18 +206,22 @@ func (w *XLogWR) ReadByTime(date string, stime, etime int64, handler func(data [
 // in reverse time order. Returns false if the writer has no container for the date.
 // Handler returns false to stop iteration early.
 func (w *XLogWR) ReadFromEndTime(date string, stime, etime int64, handler func(data []byte) bool) (bool, error) {
-	w.mu.Lock()
+	w.mu.RLock()
 	container, exists := w.days[date]
-	w.mu.Unlock()
+	w.mu.RUnlock()
 	if !exists {
 		return false, nil
 	}
 
 	err := container.index.timeIndex.ReadFromEnd(stime, etime, func(timeMs int64, dataPos []byte) bool {
-		offset := protocol.ToLong5(dataPos, 0)
-		data, err := container.data.Read(offset)
+		offset := protocol.BigEndian.Int5(dataPos)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
-			return handler(data)
+			cont := handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
+			return cont
 		}
 		return true
 	})
@@ -222,9 +231,9 @@ func (w *XLogWR) ReadFromEndTime(date string, stime, etime int64, handler func(d
 // GetByTxid retrieves a single XLog by transaction ID from the writer's containers.
 // Returns (nil, false, nil) if the writer has no container for the date.
 func (w *XLogWR) GetByTxid(date string, txid int64) ([]byte, bool, error) {
-	w.mu.Lock()
+	w.mu.RLock()
 	container, exists := w.days[date]
-	w.mu.Unlock()
+	w.mu.RUnlock()
 	if !exists {
 		return nil, false, nil
 	}
@@ -237,16 +246,16 @@ func (w *XLogWR) GetByTxid(date string, txid int64) ([]byte, bool, error) {
 		return nil, true, nil
 	}
 
-	data, err := container.data.Read(offset)
+	data, _, err := container.data.Read(offset)
 	return data, true, err
 }
 
 // ReadByGxid reads XLog entries by global transaction ID from the writer's containers.
 // Returns false if the writer has no container for the date.
 func (w *XLogWR) ReadByGxid(date string, gxid int64, handler func(data []byte)) (bool, error) {
-	w.mu.Lock()
+	w.mu.RLock()
 	container, exists := w.days[date]
-	w.mu.Unlock()
+	w.mu.RUnlock()
 	if !exists {
 		return false, nil
 	}
@@ -257,9 +266,12 @@ func (w *XLogWR) ReadByGxid(date string, gxid int64, handler func(data []byte)) 
 	}
 
 	for _, offset := range offsets {
-		data, err := container.data.Read(offset)
+		data, pooled, err := container.data.Read(offset)
 		if err == nil && data != nil {
 			handler(data)
+			if pooled {
+				compress.RecycleDecoded(data)
+			}
 		}
 	}
 	return true, nil

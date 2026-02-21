@@ -22,12 +22,12 @@ type dupKey struct {
 }
 
 // TextWR provides async text writing with deduplication.
-// All text data is stored in a single "00000000" directory.
-// Daily text data can be stored in per-date directories.
+// Permanent text is stored in "00000000/text/" using TextPermTable (per-div files with .data).
+// Daily text is stored in per-date directories using TextTable (single file with composite key).
 type TextWR struct {
-	mu          sync.Mutex
+	mu          sync.RWMutex
 	baseDir     string
-	table       *TextTable
+	table       *TextPermTable
 	dailyTables map[string]*TextTable // date → TextTable for daily text
 	dupCheck    map[dupKey]struct{}   // in-memory dedup cache
 	queue       chan *TextData
@@ -108,14 +108,14 @@ func (w *TextWR) process(data *TextData) {
 	w.dupCheck[key] = struct{}{}
 }
 
-// getTable returns the single text table, opening it if necessary.
-func (w *TextWR) getTable() (*TextTable, error) {
+// getTable returns the permanent text table, opening it if necessary.
+func (w *TextWR) getTable() (*TextPermTable, error) {
 	if w.table != nil {
 		return w.table, nil
 	}
 
-	dir := filepath.Join(w.baseDir, textDirName)
-	table, err := NewTextTable(dir)
+	dir := filepath.Join(w.baseDir, textDirName, "text")
+	table, err := NewTextPermTable(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -124,18 +124,28 @@ func (w *TextWR) getTable() (*TextTable, error) {
 	return table, nil
 }
 
-// GetString reads a text from the writer's TextTable (which has the up-to-date index).
+// GetString reads a text from the writer's TextPermTable (which has the up-to-date index).
 // This is needed because TextRD has a stale MemHashBlock that can't see data
 // written after it was opened.
 func (w *TextWR) GetString(div string, hash int32) (string, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	// Fast path: read lock if table already exists
+	w.mu.RLock()
+	table := w.table
+	w.mu.RUnlock()
 
-	table, err := w.getTable()
-	if err != nil {
-		return "", err
+	if table == nil {
+		// Slow path: write lock to create table
+		w.mu.Lock()
+		var err error
+		table, err = w.getTable()
+		if err != nil {
+			w.mu.Unlock()
+			return "", err
+		}
+		w.mu.Unlock()
 	}
 
+	// table.Get has its own mutex
 	text, found, err := table.Get(div, hash)
 	if err != nil {
 		return "", err
@@ -146,29 +156,49 @@ func (w *TextWR) GetString(div string, hash int32) (string, error) {
 	return text, nil
 }
 
-// AddDaily stores a text entry in a date-specific directory (for daily text types like SERVICE, APICALL, UA).
+// AddDaily stores a text entry in a date-specific directory (for daily text types like ERROR).
 func (w *TextWR) AddDaily(date, div string, hash int32, text string) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	// Fast path: read lock to check existing table
+	w.mu.RLock()
+	table, ok := w.dailyTables[date]
+	w.mu.RUnlock()
 
-	table, err := w.getDailyTable(date)
-	if err != nil {
-		return
+	if !ok {
+		// Slow path: write lock to create table
+		w.mu.Lock()
+		var err error
+		table, err = w.getDailyTable(date)
+		if err != nil {
+			w.mu.Unlock()
+			return
+		}
+		w.mu.Unlock()
 	}
 
+	// table.Set has its own mutex
 	table.Set(div, hash, text)
 }
 
 // GetDailyString reads a text from a date-specific directory.
 func (w *TextWR) GetDailyString(date, div string, hash int32) (string, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	// Fast path: read lock to check existing table
+	w.mu.RLock()
+	table, ok := w.dailyTables[date]
+	w.mu.RUnlock()
 
-	table, err := w.getDailyTable(date)
-	if err != nil {
-		return "", err
+	if !ok {
+		// Slow path: write lock to create table
+		w.mu.Lock()
+		var err error
+		table, err = w.getDailyTable(date)
+		if err != nil {
+			w.mu.Unlock()
+			return "", err
+		}
+		w.mu.Unlock()
 	}
 
+	// table.Get has its own mutex
 	text, found, err := table.Get(div, hash)
 	if err != nil {
 		return "", err
@@ -180,6 +210,7 @@ func (w *TextWR) GetDailyString(date, div string, hash int32) (string, error) {
 }
 
 // getDailyTable returns the TextTable for a specific date, creating it if necessary.
+// Caller must hold the write lock.
 func (w *TextWR) getDailyTable(date string) (*TextTable, error) {
 	if table, ok := w.dailyTables[date]; ok {
 		return table, nil
