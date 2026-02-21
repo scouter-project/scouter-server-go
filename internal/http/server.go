@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"strconv"
 	"strings"
@@ -86,6 +87,13 @@ func NewServer(cfg ServerConfig) *Server {
 	mux.HandleFunc("/api/v1/xlog/realtime", s.handleXLogRealtime)
 	mux.HandleFunc("/api/v1/text", s.handleText)
 	mux.HandleFunc("/health", s.handleHealth)
+
+	// pprof endpoints for runtime profiling
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	mux.HandleFunc("/api/v1/server/info", s.handleServerInfo)
 
 	// Serve static client files if client_dir exists
@@ -266,8 +274,9 @@ func (s *Server) handleCounterRealtime(w http.ResponseWriter, r *http.Request) {
 	objHash := int32(objHash64)
 
 	key := cache.CounterKey{
-		ObjHash: objHash,
-		Counter: counterName,
+		ObjHash:  objHash,
+		Counter:  counterName,
+		TimeType: cache.TimeTypeRealtime,
 	}
 	val, ok := s.counterCache.Get(key)
 	if !ok {

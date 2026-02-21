@@ -6,7 +6,13 @@ import (
 	"sync"
 )
 
-const textDirName = "00000000"
+const (
+	textDirName = "00000000"
+
+	// maxDupCheckSize caps the dedup cache to prevent unbounded memory growth.
+	// Java Scouter uses 10,000 per div; this is a global cap across all divs.
+	maxDupCheckSize = 100000
+)
 
 // TextData represents a text record to be written.
 type TextData struct {
@@ -104,7 +110,18 @@ func (w *TextWR) process(data *TextData) {
 		return
 	}
 
-	// Mark as written
+	// Mark as written; evict random entries if over capacity
+	if len(w.dupCheck) >= maxDupCheckSize {
+		// Evict ~10% to amortize cleanup cost
+		evictCount := maxDupCheckSize / 10
+		for k := range w.dupCheck {
+			delete(w.dupCheck, k)
+			evictCount--
+			if evictCount <= 0 {
+				break
+			}
+		}
+	}
 	w.dupCheck[key] = struct{}{}
 }
 

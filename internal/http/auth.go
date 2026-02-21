@@ -86,8 +86,8 @@ func (s *HTTPSessionStore) cleanup() {
 func authMiddleware(accountManager *login.AccountManager, sessionStore *HTTPSessionStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// /health is always exempt
-			if r.URL.Path == "/health" {
+			// /health and /debug/pprof/ are always exempt
+			if r.URL.Path == "/health" || strings.HasPrefix(r.URL.Path, "/debug/pprof/") {
 				next.ServeHTTP(w, r)
 				return
 			}
