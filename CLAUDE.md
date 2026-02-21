@@ -13,6 +13,15 @@
 - `scouter.server.core.cache.XLogLoopCache` → `internal/core/cache/xlog_cache.go`
 - `scouter.server.core.XLogCore` → `internal/core/xlog_core.go`
 
+## Code Review Rules
+
+### Map fields in structs must have bounded growth
+When adding a `map` as a struct field, always ensure it cannot grow indefinitely:
+- **Require one of**: max size cap with eviction, TTL-based cleanup, or periodic reset
+- **Check**: Is there a `delete()` call or size check that prevents unbounded accumulation?
+- **If no bound exists**: Add a `maxSize` constant and eviction logic before inserting new entries
+- **Reference**: `TextWR.dupCheck` was a memory leak (35MB/hour) because it lacked a size cap. Fixed by adding `maxDupCheckSize = 100000` with 10% batch eviction.
+
 ## Build
 - `make build` to build
 - `make test` to run tests
