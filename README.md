@@ -32,18 +32,95 @@ Scouter APM의 **경량 백엔드 서버**입니다. 기존 Java 서버를 Go로
 - 설정 파일 핫 리로드 지원
 - 일 단위 데이터 보관 및 자동 삭제
 
-## Requirements
+## Installation
 
-- Go 1.26+
+### Release 바이너리 (권장)
 
-## Build
+[GitHub Releases](https://github.com/scouter-project/scouter-server-go/releases)에서 플랫폼에 맞는 패키지를 다운로드합니다.
+
+| 파일 | 플랫폼 |
+|------|--------|
+| scouter-server-linux-amd64.tar.gz | Linux x86_64 |
+| scouter-server-linux-arm64.tar.gz | Linux ARM64 |
+| scouter-server-darwin-amd64.tar.gz | macOS x86_64 |
+| scouter-server-darwin-arm64.tar.gz | macOS ARM64 (Apple Silicon) |
+| scouter-server-windows-amd64.zip | Windows x86_64 |
+
+#### Linux / macOS
 
 ```bash
+# 다운로드 및 압축 해제 (예: linux-amd64)
+tar xzf scouter-server-linux-amd64.tar.gz
+cd scouter-server-linux-amd64
+
+# 설정 파일 편집
+vi conf/scouter.conf
+
+# 실행
+./start.sh
+```
+
+배포 패키지 구조:
+
+```
+scouter-server-linux-amd64/
+├── scouter-server          # 실행 바이너리
+├── conf/
+│   └── scouter.conf        # 설정 파일
+├── start.sh                # 시작 스크립트
+├── stop.sh                 # 종료 스크립트
+└── scouter-server.service  # systemd 유닛 파일 (Linux)
+```
+
+#### Windows
+
+```
+# 압축 해제 후
+cd scouter-server-windows-amd64
+
+# 설정 파일 편집
+notepad conf\scouter.conf
+
+# 실행
+start.bat
+```
+
+#### systemd 서비스 등록 (Linux)
+
+```bash
+# 바이너리를 /opt에 배치
+sudo cp -r scouter-server-linux-amd64 /opt/scouter-server
+
+# scouter 사용자 생성
+sudo useradd -r -s /sbin/nologin scouter
+sudo chown -R scouter:scouter /opt/scouter-server
+
+# 서비스 등록 및 시작
+sudo cp /opt/scouter-server/scouter-server.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable scouter-server
+sudo systemctl start scouter-server
+
+# 상태 확인
+sudo systemctl status scouter-server
+```
+
+### 소스에서 빌드
+
+Go 1.26+ 필요
+
+```bash
+git clone https://github.com/scouter-project/scouter-server-go.git
+cd scouter-server-go
+
 # 빌드
 make build
 
 # 크로스 컴파일 (linux, darwin, windows)
 make build-all
+
+# 배포 패키지 생성 (바이너리 + 설정 + 스크립트)
+make dist-all
 
 # 테스트
 make test
@@ -52,21 +129,54 @@ make test
 make help
 ```
 
+빌드 결과물은 `dist/` 디렉토리에 생성됩니다.
+
 ## Configuration
 
-설정 파일 경로: `./scouter.conf` (환경변수 `SCOUTER_CONF`로 변경 가능)
+설정 파일 경로: `./conf/scouter.conf` (환경변수 `SCOUTER_CONF`로 변경 가능)
 
 | 설정 | 기본값 | 설명 |
 |------|--------|------|
-| UDP 포트 | 6100 | 에이전트 데이터 수신 |
-| TCP 포트 | 6100 | 에이전트/클라이언트 연결 |
-| HTTP 포트 | 6180 | REST API |
-| 데이터 디렉토리 | `./database` | 저장소 경로 (`db_dir`) |
+| `net_udp_listen_port` | 6100 | UDP 에이전트 데이터 수신 포트 |
+| `net_tcp_listen_port` | 6100 | TCP 에이전트/클라이언트 연결 포트 |
+| `net_http_port` | 6180 | REST API 포트 |
+| `net_http_enabled` | false | HTTP API 활성화 여부 |
+| `db_dir` | `./database` | 데이터 저장소 경로 |
+| `db_keep_days` | 30 | 데이터 보관 일수 |
+| `log_dir` | `./logs` | 로그 디렉토리 |
+
+### 메모리 설정
+
+`GOMEMLIMIT` 환경변수로 런타임 메모리 상한을 설정합니다. `start.sh`의 기본값은 `1GiB`입니다.
+
+```bash
+export GOMEMLIMIT=2GiB    # 2GB로 변경
+./start.sh
+```
 
 ## Run
 
 ```bash
+# make로 빌드 후 실행
 make run
+
+# 또는 직접 실행
+./dist/scouter-server
+
+# 버전 확인
+./dist/scouter-server version
+```
+
+### 종료
+
+PID 파일(`{PID}.scouter`)을 삭제하면 서버가 graceful shutdown됩니다.
+
+```bash
+# start.sh로 실행한 경우
+./stop.sh
+
+# 또는 SIGTERM/SIGINT
+kill <PID>
 ```
 
 ## Documentation
