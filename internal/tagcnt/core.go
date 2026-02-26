@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 const (

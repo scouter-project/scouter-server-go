@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // newTestServer creates a Server populated with fresh caches for testing.

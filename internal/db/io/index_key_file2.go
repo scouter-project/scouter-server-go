@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 // IndexKeyFile2 is a composite hash-based key-value index with TTL support,

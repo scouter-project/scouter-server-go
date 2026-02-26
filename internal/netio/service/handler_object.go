@@ -3,11 +3,11 @@ package service
 import (
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/counter"
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/counter"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // RegisterObjectHandlers registers OBJECT_LIST_REAL_TIME and related handlers.

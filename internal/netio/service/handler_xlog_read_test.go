@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/db/counter"
-	"github.com/zbum/scouter-server-go/internal/db/profile"
-	"github.com/zbum/scouter-server-go/internal/db/xlog"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/db/counter"
+	"github.com/scouter-project/scouter-server-go/internal/db/profile"
+	"github.com/scouter-project/scouter-server-go/internal/db/xlog"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // buildRequest serializes a MapPack into a DataInputX that handlers can read.

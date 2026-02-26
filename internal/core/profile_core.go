@@ -5,8 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/db/profile"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/db/profile"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // ProfileCore processes incoming XLogProfilePack data.

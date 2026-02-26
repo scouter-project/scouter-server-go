@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 func setupTestDir(t *testing.T) string {

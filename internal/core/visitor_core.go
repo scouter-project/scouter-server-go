@@ -4,9 +4,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/db/visitor"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/db/visitor"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // VisitorCore processes visitor data from XLog transactions.

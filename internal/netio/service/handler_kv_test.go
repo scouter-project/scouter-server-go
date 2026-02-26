@@ -3,10 +3,10 @@ package service
 import (
 	"testing"
 
-	"github.com/zbum/scouter-server-go/internal/db/kv"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/db/kv"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 func TestKVHandlers_SetAndGet(t *testing.T) {

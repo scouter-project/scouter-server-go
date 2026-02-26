@@ -5,9 +5,9 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 const (

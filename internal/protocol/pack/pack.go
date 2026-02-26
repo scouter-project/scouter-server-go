@@ -3,7 +3,7 @@ package pack
 import (
 	"fmt"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // Pack type codes

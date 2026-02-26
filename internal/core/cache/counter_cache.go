@@ -3,7 +3,7 @@ package cache
 import (
 	"sync"
 
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // TimeType constants matching Java's TimeTypeEnum.

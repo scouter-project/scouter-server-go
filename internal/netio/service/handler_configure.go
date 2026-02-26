@@ -4,11 +4,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/counter"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/counter"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // RegisterConfigureHandlers registers configuration management handlers.

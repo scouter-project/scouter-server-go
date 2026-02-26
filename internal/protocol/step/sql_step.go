@@ -1,6 +1,6 @@
 package step
 
-import "github.com/zbum/scouter-server-go/internal/protocol"
+import "github.com/scouter-project/scouter-server-go/internal/protocol"
 
 // SqlStep represents a SQL execution step
 type SqlStep struct {

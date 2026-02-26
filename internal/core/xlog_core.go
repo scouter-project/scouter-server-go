@@ -5,14 +5,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/db/profile"
-	"github.com/zbum/scouter-server-go/internal/db/xlog"
-	"github.com/zbum/scouter-server-go/internal/geoip"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/tagcnt"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/db/profile"
+	"github.com/scouter-project/scouter-server-go/internal/db/xlog"
+	"github.com/scouter-project/scouter-server-go/internal/geoip"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/tagcnt"
 )
 
 // XLogCore processes incoming XLogPack data, caching and storing transaction logs.

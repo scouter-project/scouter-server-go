@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 // DataPurgeScheduler implements per-type data purging with different retention

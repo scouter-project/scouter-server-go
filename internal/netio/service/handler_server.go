@@ -3,8 +3,8 @@ package service
 import (
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // RegisterServerHandlers registers SERVER_VERSION and SERVER_TIME handlers.

@@ -1,7 +1,7 @@
 package pack
 
 import (
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // StackPack represents stack trace data.

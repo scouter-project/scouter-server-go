@@ -1,7 +1,7 @@
 package pack
 
 import (
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // BatchPack represents batch job data (uses blob wrapping).

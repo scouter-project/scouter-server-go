@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // TagObjDetectedType is the tag key agents use to indicate the reference type

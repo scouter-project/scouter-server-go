@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/db/io"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/db/io"
 )
 
 // RehashResult holds statistics for a single div rehash operation.

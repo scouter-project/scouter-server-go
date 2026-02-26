@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 // SummaryEntry represents a single summary entry to be written.

@@ -5,12 +5,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/db/counter"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/db/counter"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 // RegisterCounterReadHandlers registers handlers that read counter data from storage.

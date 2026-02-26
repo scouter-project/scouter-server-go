@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // KeyRecord2 represents a single record in the v2 key file chain (with TTL support).

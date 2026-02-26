@@ -1,6 +1,6 @@
 package step
 
-import "github.com/zbum/scouter-server-go/internal/protocol"
+import "github.com/scouter-project/scouter-server-go/internal/protocol"
 
 // MessageStep represents a message step
 type MessageStep struct {

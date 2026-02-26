@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/config"
 )
 
 // multiPacket holds fragments of a split UDP packet awaiting reassembly.

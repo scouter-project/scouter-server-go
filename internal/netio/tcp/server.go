@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/login"
-	"github.com/zbum/scouter-server-go/internal/netio/service"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/login"
+	"github.com/scouter-project/scouter-server-go/internal/netio/service"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // ServerConfig holds TCP server configuration.

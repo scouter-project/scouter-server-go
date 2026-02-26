@@ -1,6 +1,6 @@
 package step
 
-import "github.com/zbum/scouter-server-go/internal/protocol"
+import "github.com/scouter-project/scouter-server-go/internal/protocol"
 
 // SqlStep3 extends SqlStep2 with Updated count
 type SqlStep3 struct {

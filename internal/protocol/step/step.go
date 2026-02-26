@@ -3,7 +3,7 @@ package step
 import (
 	"fmt"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // Step type codes from Java StepEnum

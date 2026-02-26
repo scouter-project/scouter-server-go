@@ -3,7 +3,7 @@ package step
 import (
 	"testing"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 func roundTripStep(t *testing.T, s Step) Step {

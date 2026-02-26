@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/zbum/scouter-server-go/internal/db/summary"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/db/summary"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // Summary type constants (matching Java Scouter SummaryEnum)

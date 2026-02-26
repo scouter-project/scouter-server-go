@@ -3,7 +3,7 @@ package value
 import (
 	"fmt"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // Value type codes (must match Java ValueEnum exactly)

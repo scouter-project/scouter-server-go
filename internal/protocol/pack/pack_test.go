@@ -3,8 +3,8 @@ package pack
 import (
 	"testing"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 func TestMapPack(t *testing.T) {

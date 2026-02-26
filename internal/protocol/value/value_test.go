@@ -3,7 +3,7 @@ package value
 import (
 	"testing"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 func roundTrip(t *testing.T, v Value) Value {

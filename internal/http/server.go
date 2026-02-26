@@ -14,12 +14,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/db/alert"
-	"github.com/zbum/scouter-server-go/internal/db/counter"
-	"github.com/zbum/scouter-server-go/internal/db/xlog"
-	"github.com/zbum/scouter-server-go/internal/login"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/db/alert"
+	"github.com/scouter-project/scouter-server-go/internal/db/counter"
+	"github.com/scouter-project/scouter-server-go/internal/db/xlog"
+	"github.com/scouter-project/scouter-server-go/internal/login"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 var startTime = time.Now()

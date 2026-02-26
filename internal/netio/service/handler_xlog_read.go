@@ -4,13 +4,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/db/profile"
-	"github.com/zbum/scouter-server-go/internal/db/xlog"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/db/profile"
+	"github.com/scouter-project/scouter-server-go/internal/db/xlog"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 // RegisterXLogReadHandlers registers handlers that read XLog data from storage.

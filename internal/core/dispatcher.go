@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // PackHandler processes a single pack received from the network.

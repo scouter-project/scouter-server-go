@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/login"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/login"
 )
 
 // httpSession represents an HTTP API session.

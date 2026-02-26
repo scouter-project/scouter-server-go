@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // AgentWorker manages a single TCP connection to an agent.

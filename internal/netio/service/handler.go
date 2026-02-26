@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // HandlerFunc is a TCP service handler.

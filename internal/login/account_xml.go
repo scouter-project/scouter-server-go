@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // --- account.xml structures ---

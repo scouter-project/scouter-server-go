@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/zbum/scouter-server-go/internal/config"
-	"github.com/zbum/scouter-server-go/internal/db/io"
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/config"
+	"github.com/scouter-project/scouter-server-go/internal/db/io"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // TextPermTable provides permanent text storage using per-div IndexKeyFile + data files.

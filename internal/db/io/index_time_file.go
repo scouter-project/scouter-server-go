@@ -4,8 +4,8 @@ import (
 	"errors"
 	"sort"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 // TimeToData pairs a timestamp with a data position reference.

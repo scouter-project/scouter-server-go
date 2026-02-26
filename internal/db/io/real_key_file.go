@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 const (

@@ -1,6 +1,6 @@
 package step
 
-import "github.com/zbum/scouter-server-go/internal/protocol"
+import "github.com/scouter-project/scouter-server-go/internal/protocol"
 
 // ParameterizedMessageStep represents a parameterized message step
 type ParameterizedMessageStep struct {

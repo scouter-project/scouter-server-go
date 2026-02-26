@@ -1,8 +1,8 @@
 package pack
 
 import (
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // MapEntry represents a key-value entry in the map.

@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // Account represents a user account.

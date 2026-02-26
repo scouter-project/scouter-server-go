@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // simulateAgent connects to the server as a TCP_AGENT and returns the connection for manual control.

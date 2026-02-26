@@ -1,6 +1,6 @@
 package value
 
-import "github.com/zbum/scouter-server-go/internal/protocol"
+import "github.com/scouter-project/scouter-server-go/internal/protocol"
 
 type DecimalValue struct {
 	Value int64

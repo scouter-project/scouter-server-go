@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/counter"
-	"github.com/zbum/scouter-server-go/internal/core/cache"
-	"github.com/zbum/scouter-server-go/internal/login"
-	"github.com/zbum/scouter-server-go/internal/netio/service"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
-	"github.com/zbum/scouter-server-go/internal/util"
+	"github.com/scouter-project/scouter-server-go/internal/counter"
+	"github.com/scouter-project/scouter-server-go/internal/core/cache"
+	"github.com/scouter-project/scouter-server-go/internal/login"
+	"github.com/scouter-project/scouter-server-go/internal/netio/service"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/util"
 )
 
 const testVersion = "1.0.0-test"

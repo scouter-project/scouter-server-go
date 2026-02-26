@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/protocol/value"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 func TestRealtimeCounterData_WriteRead(t *testing.T) {

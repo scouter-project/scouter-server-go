@@ -3,8 +3,8 @@ package xlog
 import (
 	"path/filepath"
 
-	"github.com/zbum/scouter-server-go/internal/db/io"
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/db/io"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 // XLogIndex manages triple indexing: time, txid, and gxid.

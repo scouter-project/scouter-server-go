@@ -5,9 +5,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/zbum/scouter-server-go/internal/db/summary"
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/db/summary"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // SummaryCore processes incoming SummaryPack data.

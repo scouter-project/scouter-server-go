@@ -1,4 +1,4 @@
-module github.com/zbum/scouter-server-go
+module github.com/scouter-project/scouter-server-go
 
 go 1.26.0
 

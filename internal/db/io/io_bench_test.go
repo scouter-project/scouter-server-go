@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
 )
 
 func benchDir(b *testing.B) string {

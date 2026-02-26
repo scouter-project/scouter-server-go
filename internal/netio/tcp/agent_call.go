@@ -3,8 +3,8 @@ package tcp
 import (
 	"log/slog"
 
-	"github.com/zbum/scouter-server-go/internal/protocol"
-	"github.com/zbum/scouter-server-go/internal/protocol/pack"
+	"github.com/scouter-project/scouter-server-go/internal/protocol"
+	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
 // AgentCall provides RPC-style calls to agents via their pooled TCP connections.
