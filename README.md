@@ -34,7 +34,7 @@ Scouter APM의 **경량 백엔드 서버**입니다. 기존 Java 서버를 Go로
 
 ## Requirements
 
-- Go 1.22+
+- Go 1.26+
 
 ## Build
 
