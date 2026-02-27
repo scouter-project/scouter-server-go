@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+const maxTextRDCacheSize = 100000
+
 // cacheKey uniquely identifies a cached text entry.
 type cacheKey struct {
 	Div  string
@@ -69,6 +71,18 @@ func (r *TextRD) GetString(div string, hash int32) (string, error) {
 	}
 	if !found {
 		return "", nil
+	}
+
+	// Evict ~10% if over capacity to prevent unbounded growth
+	if len(r.cache) >= maxTextRDCacheSize {
+		evictCount := maxTextRDCacheSize / 10
+		for k := range r.cache {
+			delete(r.cache, k)
+			evictCount--
+			if evictCount <= 0 {
+				break
+			}
+		}
 	}
 
 	// Cache the result

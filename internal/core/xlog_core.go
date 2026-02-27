@@ -123,9 +123,11 @@ func (xc *XLogCore) run() {
 		}
 
 		// Serialize and cache for real-time streaming
-		o := protocol.NewDataOutputX()
+		o := protocol.AcquireDataOutputX()
 		pack.WritePack(o, xp)
-		b := o.ToByteArray()
+		b := make([]byte, len(o.ToByteArray()))
+		copy(b, o.ToByteArray())
+		protocol.ReleaseDataOutputX(o)
 		xc.xlogCache.Put(xp.ObjHash, xp.Elapsed, xp.Error != 0, b)
 
 		// Aggregate by service group for real-time throughput display
