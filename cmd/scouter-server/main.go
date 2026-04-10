@@ -30,6 +30,7 @@ import (
 	"github.com/scouter-project/scouter-server-go/internal/netio/service"
 	"github.com/scouter-project/scouter-server-go/internal/netio/tcp"
 	"github.com/scouter-project/scouter-server-go/internal/netio/udp"
+	scouterplugin "github.com/scouter-project/scouter-server-go/internal/plugin"
 	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 	"github.com/scouter-project/scouter-server-go/internal/tagcnt"
 )
@@ -204,6 +205,13 @@ func main() {
 	profileCore := core.NewProfileCore(profileWR)
 	typeManager := scoutercounter.NewObjectTypeManager()
 	alertCore := core.NewAlertCore(alertWR, alertCache)
+
+	// --- External plugin system (IAlert / ICounter over gRPC) ---
+	pluginMgr := scouterplugin.NewManager(cfg.PluginDir(), cfg.PluginEnabled())
+	pluginMgr.Start(ctx)
+	defer pluginMgr.Stop()
+	alertCore.SetPluginDispatcher(pluginMgr)
+	perfCountCore.SetPluginDispatcher(pluginMgr)
 	agentManager := core.NewAgentManager(objectCache, deadTimeout, typeManager, textCache, textCore, alertCore)
 	summaryCore := core.NewSummaryCore(summaryWR)
 

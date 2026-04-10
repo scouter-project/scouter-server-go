@@ -14,11 +14,18 @@ import (
 
 // Use cache.TimeTypeRealtime instead of local constant.
 
+// CounterPluginDispatcher is the minimal surface PerfCountCore needs
+// from the plugin subsystem. See AlertPluginDispatcher for rationale.
+type CounterPluginDispatcher interface {
+	DispatchCounter(cp *pack.PerfCounterPack)
+}
+
 // PerfCountCore processes incoming PerfCounterPack data.
 type PerfCountCore struct {
 	counterCache *cache.CounterCache
 	counterWR    *counter.CounterWR
 	queue        chan *pack.PerfCounterPack
+	plugins      CounterPluginDispatcher
 }
 
 func NewPerfCountCore(counterCache *cache.CounterCache, counterWR *counter.CounterWR) *PerfCountCore {
@@ -29,6 +36,11 @@ func NewPerfCountCore(counterCache *cache.CounterCache, counterWR *counter.Count
 	}
 	go pc.run()
 	return pc
+}
+
+// SetPluginDispatcher attaches a plugin dispatcher. Nil disables fan-out.
+func (pc *PerfCountCore) SetPluginDispatcher(d CounterPluginDispatcher) {
+	pc.plugins = d
 }
 
 func (pc *PerfCountCore) Handler() PackHandler {
@@ -75,6 +87,11 @@ func (pc *PerfCountCore) run() {
 				}
 				pc.counterWR.AddRealtimeFromPerfCounter(cp.Time, objHash, counters)
 			}
+		}
+
+		// Fan out to external plugins (ICounter hooks).
+		if pc.plugins != nil {
+			pc.plugins.DispatchCounter(cp)
 		}
 	}
 }

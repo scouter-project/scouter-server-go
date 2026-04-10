@@ -1,0 +1,57 @@
+// Scouter Server Go — plugin gRPC contract.
+//
+// This proto defines the wire contract between scouter-server and
+// user-developed plugins. Plugins are external processes launched by
+// hashicorp/go-plugin; they implement one or more of the services below.
+//
+// Stability: v1. Breaking changes require bumping the package name.
+syntax = "proto3";
+
+package scouter.plugin.v1;
+
+option go_package = "github.com/scouter-project/scouter-server-go/internal/plugin/proto;pluginpb";
+
+// ---------------------------------------------------------------------------
+// Common payloads
+// ---------------------------------------------------------------------------
+
+// AlertPayload mirrors the subset of scouter AlertPack that is most useful
+// for plugin authors. Tag values are flattened to strings; complex tag
+// values (lists, maps) are JSON-encoded.
+message AlertPayload {
+  int64  time     = 1; // epoch millis
+  uint32 level    = 2; // 0=info, 1=warn, 2=error, 3=fatal
+  string obj_type = 3;
+  int32  obj_hash = 4;
+  string title    = 5;
+  string message  = 6;
+  map<string, string> tags = 7;
+}
+
+// CounterPayload mirrors scouter PerfCounterPack. Counter values are
+// flattened to float64; non-numeric values are skipped.
+message CounterPayload {
+  int64  time      = 1; // epoch millis
+  string obj_name  = 2;
+  uint32 time_type = 3; // 1=Realtime, 2=FiveMin, 3=Hour, etc.
+  map<string, double> counters = 4;
+}
+
+// Empty ack — plugins never mutate packs, they only observe.
+message Ack {}
+
+// ---------------------------------------------------------------------------
+// Services
+// ---------------------------------------------------------------------------
+
+// IAlert — called once per AlertPack on scouter-server.
+// Mirrors Java scouter.server.plugin.IAlert.
+service IAlert {
+  rpc Process(AlertPayload) returns (Ack);
+}
+
+// ICounter — called once per PerfCounterPack on scouter-server.
+// Mirrors Java scouter.server.plugin.ICounter.
+service ICounter {
+  rpc Process(CounterPayload) returns (Ack);
+}

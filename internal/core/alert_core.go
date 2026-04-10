@@ -11,11 +11,19 @@ import (
 	"github.com/scouter-project/scouter-server-go/internal/protocol/pack"
 )
 
+// AlertPluginDispatcher is the minimal surface AlertCore needs from the
+// plugin subsystem. Kept as an interface so the core package does not
+// depend on internal/plugin (which drags in grpc + hashicorp/go-plugin).
+type AlertPluginDispatcher interface {
+	DispatchAlert(ap *pack.AlertPack)
+}
+
 // AlertCore processes incoming AlertPack data.
 type AlertCore struct {
 	queue      chan *pack.AlertPack
 	alertWR    *alert.AlertWR
 	alertCache *cache.AlertCache
+	plugins    AlertPluginDispatcher
 }
 
 func NewAlertCore(alertWR *alert.AlertWR, alertCache *cache.AlertCache) *AlertCore {
@@ -26,6 +34,12 @@ func NewAlertCore(alertWR *alert.AlertWR, alertCache *cache.AlertCache) *AlertCo
 	}
 	go ac.run()
 	return ac
+}
+
+// SetPluginDispatcher attaches a plugin dispatcher. Safe to call once at
+// startup before agents connect. Passing nil disables plugin fan-out.
+func (ac *AlertCore) SetPluginDispatcher(d AlertPluginDispatcher) {
+	ac.plugins = d
 }
 
 func (ac *AlertCore) Handler() PackHandler {
@@ -71,6 +85,11 @@ func (ac *AlertCore) run() {
 				TimeMs: ap.Time,
 				Data:   data,
 			})
+		}
+
+		// Fan out to external plugins (IAlert hooks).
+		if ac.plugins != nil {
+			ac.plugins.DispatchAlert(ap)
 		}
 	}
 }
