@@ -73,7 +73,7 @@ dist-all: clean ## Build and package for all platforms
 	@chmod +x $(DIST_DIR)/$(BINARY_NAME)-linux-amd64/start.sh $(DIST_DIR)/$(BINARY_NAME)-linux-amd64/stop.sh
 	@cp scripts/scouter-server.service $(DIST_DIR)/$(BINARY_NAME)-linux-amd64/
 	@xattr -cr $(DIST_DIR)/$(BINARY_NAME)-linux-amd64
-	@tar -czf $(DIST_DIR)/$(BINARY_NAME)-linux-amd64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-linux-amd64
+	@tar --no-xattrs -czf $(DIST_DIR)/$(BINARY_NAME)-linux-amd64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-linux-amd64
 	@rm -rf $(DIST_DIR)/$(BINARY_NAME)-linux-amd64
 	@# --- linux/arm64 ---
 	@echo "Packaging linux/arm64..."
@@ -84,7 +84,7 @@ dist-all: clean ## Build and package for all platforms
 	@chmod +x $(DIST_DIR)/$(BINARY_NAME)-linux-arm64/start.sh $(DIST_DIR)/$(BINARY_NAME)-linux-arm64/stop.sh
 	@cp scripts/scouter-server.service $(DIST_DIR)/$(BINARY_NAME)-linux-arm64/
 	@xattr -cr $(DIST_DIR)/$(BINARY_NAME)-linux-arm64
-	@tar -czf $(DIST_DIR)/$(BINARY_NAME)-linux-arm64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-linux-arm64
+	@tar --no-xattrs -czf $(DIST_DIR)/$(BINARY_NAME)-linux-arm64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-linux-arm64
 	@rm -rf $(DIST_DIR)/$(BINARY_NAME)-linux-arm64
 	@# --- darwin/amd64 ---
 	@echo "Packaging darwin/amd64..."
@@ -94,7 +94,7 @@ dist-all: clean ## Build and package for all platforms
 	@cp scripts/start.sh scripts/stop.sh $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64/
 	@chmod +x $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64/start.sh $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64/stop.sh
 	@xattr -cr $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64
-	@tar -czf $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-darwin-amd64
+	@tar --no-xattrs -czf $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-darwin-amd64
 	@rm -rf $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64
 	@# --- darwin/arm64 ---
 	@echo "Packaging darwin/arm64..."
@@ -104,7 +104,7 @@ dist-all: clean ## Build and package for all platforms
 	@cp scripts/start.sh scripts/stop.sh $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64/
 	@chmod +x $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64/start.sh $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64/stop.sh
 	@xattr -cr $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64
-	@tar -czf $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-darwin-arm64
+	@tar --no-xattrs -czf $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64.tar.gz -C $(DIST_DIR) $(BINARY_NAME)-darwin-arm64
 	@rm -rf $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64
 	@# --- windows/amd64 ---
 	@echo "Packaging windows/amd64..."

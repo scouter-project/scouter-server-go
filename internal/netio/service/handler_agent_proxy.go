@@ -137,11 +137,6 @@ func RegisterAgentProxyHandlers(r *Registry, caller AgentCaller, objectCache *ca
 				pack.WritePack(dout, result)
 			}
 		} else {
-			// Skip dead agents
-			info, ok := objectCache.Get(objHash)
-			if !ok || !info.Pack.Alive {
-				return
-			}
 			result := caller.AgentCallSingle(objHash, protocol.OBJECT_ACTIVE_SERVICE_LIST, param)
 			if result == nil {
 				result = &pack.MapPack{}
@@ -179,11 +174,6 @@ func RegisterAgentProxyHandlers(r *Registry, caller AgentCaller, objectCache *ca
 				continue
 			}
 			objHash := int32(dv.Value)
-			// Skip dead agents
-			info, ok := objectCache.Get(objHash)
-			if !ok || !info.Pack.Alive {
-				continue
-			}
 			result := caller.AgentCallSingle(objHash, protocol.OBJECT_ACTIVE_SERVICE_LIST, param)
 			if result == nil {
 				result = &pack.MapPack{}
