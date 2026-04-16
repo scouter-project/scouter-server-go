@@ -230,6 +230,11 @@ func (f *IndexKeyFile) Stat() map[string]interface{} {
 	return out
 }
 
+// Reload re-reads the hash index from disk to pick up writes by another instance.
+func (f *IndexKeyFile) Reload() error {
+	return f.hashBlock.Reload()
+}
+
 func (f *IndexKeyFile) Close() {
 	f.hashBlock.Close()
 	f.keyFile.Close()

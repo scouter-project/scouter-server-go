@@ -16,19 +16,26 @@ import (
 
 // PerfCountCore processes incoming PerfCounterPack data.
 type PerfCountCore struct {
-	counterCache *cache.CounterCache
-	counterWR    *counter.CounterWR
-	queue        chan *pack.PerfCounterPack
+	counterCache   *cache.CounterCache
+	counterWR      *counter.CounterWR
+	auto5mSampling *Auto5MSampling
+	queue          chan *pack.PerfCounterPack
 }
 
 func NewPerfCountCore(counterCache *cache.CounterCache, counterWR *counter.CounterWR) *PerfCountCore {
 	pc := &PerfCountCore{
-		counterCache: counterCache,
-		counterWR:    counterWR,
-		queue:        make(chan *pack.PerfCounterPack, 4096),
+		counterCache:   counterCache,
+		counterWR:      counterWR,
+		auto5mSampling: NewAuto5MSampling(counterWR),
+		queue:          make(chan *pack.PerfCounterPack, 4096),
 	}
 	go pc.run()
 	return pc
+}
+
+// Auto5MSampling returns the auto 5-minute sampling instance for starting its goroutine.
+func (pc *PerfCountCore) Auto5MSampling() *Auto5MSampling {
+	return pc.auto5mSampling
 }
 
 func (pc *PerfCountCore) Handler() PackHandler {
@@ -66,14 +73,55 @@ func (pc *PerfCountCore) run() {
 			"objName", cp.ObjName,
 			"objHash", objHash,
 			"counters", cp.Data.Size())
-		if pc.counterWR != nil {
-			if cp.TimeType == cache.TimeTypeRealtime {
-				// Convert MapValue entries to map[string]value.Value
-				counters := make(map[string]value.Value)
-				for _, entry := range cp.Data.Entries {
-					counters[entry.Key] = entry.Value
+
+		if pc.counterWR == nil {
+			continue
+		}
+
+		if cp.TimeType == cache.TimeTypeRealtime {
+			// Write to realtime storage
+			counters := make(map[string]value.Value)
+			for _, entry := range cp.Data.Entries {
+				counters[entry.Key] = entry.Value
+			}
+			pc.counterWR.AddRealtimeFromPerfCounter(cp.Time, objHash, counters)
+
+			// Feed into Auto5MSampling for periodic daily aggregation
+			for _, entry := range cp.Data.Entries {
+				key := cache.CounterKey{
+					ObjHash:  objHash,
+					Counter:  entry.Key,
+					TimeType: cache.TimeTypeRealtime,
 				}
-				pc.counterWR.AddRealtimeFromPerfCounter(cp.Time, objHash, counters)
+				pc.auto5mSampling.Add(key, entry.Value)
+			}
+		} else {
+			// FIVE_MIN or other non-realtime: write directly to daily storage
+			t := time.UnixMilli(cp.Time)
+			date := t.Format("20060102")
+			hhmm := t.Hour()*100 + t.Minute()
+			bucket := counter.HHMMToBucket(hhmm)
+
+			for _, entry := range cp.Data.Entries {
+				f64, ok := value.ToFloat64(entry.Value)
+				if !ok {
+					continue
+				}
+				pc.counterWR.AddDaily(&counter.DailyEntry{
+					Date:        date,
+					ObjHash:     objHash,
+					CounterName: entry.Key,
+					Bucket:      bucket,
+					Value:       f64,
+				})
+
+				// Mark this key so Auto5MSampling skips it
+				key := cache.CounterKey{
+					ObjHash:  objHash,
+					Counter:  entry.Key,
+					TimeType: cp.TimeType,
+				}
+				pc.auto5mSampling.Add(key, entry.Value)
 			}
 		}
 	}

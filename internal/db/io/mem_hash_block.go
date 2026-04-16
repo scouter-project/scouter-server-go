@@ -115,6 +115,27 @@ func (m *MemHashBlock) Interval() time.Duration {
 	return 4 * time.Second
 }
 
+// Reload re-reads the .hfile from disk without flushing first.
+// Used by read-only consumers to pick up changes written by the writer.
+func (m *MemHashBlock) Reload() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	data, err := os.ReadFile(m.file)
+	if err != nil {
+		return err
+	}
+	if len(data) < memHeadReserved {
+		return nil // file too small, nothing to reload
+	}
+	m.buf = data
+	m.bufSize = len(data) - memHeadReserved
+	m.capacity = m.bufSize / keyLength
+	m.count = int(protocol.BigEndian.Int32(m.buf[4:]))
+	m.dirty = false
+	return nil
+}
+
 func (m *MemHashBlock) Close() {
 	m.Flush()
 	GetFlushController().Unregister(m)

@@ -108,23 +108,27 @@ func RegisterCounterExtHandlers(r *Registry, counterCache *cache.CounterCache, o
 		counterName := param.GetText("counter")
 
 		date := time.Now().Format("20060102")
+		stime := util.DateToMillis(date)
+		delta := int64(util.MillisPerFiveMinute)
 
 		values, err := counterRD.ReadDailyAll(date, objHash, counterName)
 		if err != nil || values == nil {
 			return
 		}
 
-		floats := make([]float32, len(values))
+		result := &pack.MapPack{}
+		timeList := value.NewListValue()
+		valueList := value.NewListValue()
 		for i, v := range values {
+			timeList.Value = append(timeList.Value, value.NewDecimalValue(stime+int64(i)*delta))
 			if math.IsNaN(v) {
-				floats[i] = 0
+				valueList.Value = append(valueList.Value, &value.NullValue{})
 			} else {
-				floats[i] = float32(v)
+				valueList.Value = append(valueList.Value, &value.DoubleValue{Value: v})
 			}
 		}
-
-		result := &pack.MapPack{}
-		result.Put("value", &value.FloatArray{Value: floats})
+		result.Put("time", timeList)
+		result.Put("value", valueList)
 		dout.WriteByte(protocol.FLAG_HAS_NEXT)
 		pack.WritePack(dout, result)
 	})
@@ -144,6 +148,8 @@ func RegisterCounterExtHandlers(r *Registry, counterCache *cache.CounterCache, o
 		}
 
 		date := time.Now().Format("20060102")
+		stime := util.DateToMillis(date)
+		delta := int64(util.MillisPerFiveMinute)
 
 		live := objectCache.GetLive(deadTimeout)
 		for _, info := range live {
@@ -156,18 +162,20 @@ func RegisterCounterExtHandlers(r *Registry, counterCache *cache.CounterCache, o
 				continue
 			}
 
-			floats := make([]float32, len(values))
-			for i, v := range values {
-				if math.IsNaN(v) {
-					floats[i] = 0
-				} else {
-					floats[i] = float32(v)
-				}
-			}
-
 			result := &pack.MapPack{}
 			result.PutLong("objHash", int64(info.Pack.ObjHash))
-			result.Put("value", &value.FloatArray{Value: floats})
+			timeList := value.NewListValue()
+			valueList := value.NewListValue()
+			for i, v := range values {
+				timeList.Value = append(timeList.Value, value.NewDecimalValue(stime+int64(i)*delta))
+				if math.IsNaN(v) {
+					valueList.Value = append(valueList.Value, &value.NullValue{})
+				} else {
+					valueList.Value = append(valueList.Value, &value.DoubleValue{Value: v})
+				}
+			}
+			result.Put("time", timeList)
+			result.Put("value", valueList)
 			dout.WriteByte(protocol.FLAG_HAS_NEXT)
 			pack.WritePack(dout, result)
 		}

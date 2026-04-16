@@ -131,6 +131,25 @@ func isNilValue(v Value) bool {
 	}
 }
 
+// ToFloat64 converts a Value to float64. Returns 0 and false for unsupported types.
+func ToFloat64(v Value) (float64, bool) {
+	switch tv := v.(type) {
+	case *DecimalValue:
+		return float64(tv.Value), true
+	case *FloatValue:
+		return float64(tv.Value), true
+	case *DoubleValue:
+		return tv.Value, true
+	case *BooleanValue:
+		if tv.Value {
+			return 1, true
+		}
+		return 0, true
+	default:
+		return 0, false
+	}
+}
+
 func ReadValue(d *protocol.DataInputX) (Value, error) {
 	typeByte, err := d.ReadByte()
 	if err != nil {
