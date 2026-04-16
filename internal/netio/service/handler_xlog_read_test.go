@@ -352,10 +352,7 @@ func TestCounterPastTime(t *testing.T) {
 	date := now.Format("20060102")
 	objHash := int32(1)
 
-	// Compute the seconds-of-day in local time (same as the writer does)
-	baseSec := int32(now.Hour()*3600 + now.Minute()*60 + now.Second())
-
-	// Write counters at baseSec..baseSec+5
+	// Write counters at now..now+5s
 	for sec := 0; sec < 6; sec++ {
 		ts := now.Add(time.Duration(sec) * time.Second)
 		counters := map[string]value.Value{
@@ -380,12 +377,13 @@ func TestCounterPastTime(t *testing.T) {
 	registry := NewRegistry()
 	RegisterCounterReadHandlers(registry, counterRD, objectCache, 30*time.Second)
 
+	// Java client sends stime/etime as epoch millis.
 	param := &pack.MapPack{}
 	param.PutStr("date", date)
 	param.Put("objHash", value.NewDecimalValue(int64(objHash)))
 	param.PutStr("counter", "TPS")
-	param.Put("stime", value.NewDecimalValue(int64(baseSec)))
-	param.Put("etime", value.NewDecimalValue(int64(baseSec+5)))
+	param.PutLong("stime", now.UnixMilli())
+	param.PutLong("etime", now.Add(5*time.Second).UnixMilli())
 
 	din := buildRequest(param)
 	dout := protocol.NewDataOutputX()
@@ -449,6 +447,15 @@ func TestCounterPastTime(t *testing.T) {
 	}
 	if firstVal.Value != 100 {
 		t.Errorf("expected first TPS=100, got %d", firstVal.Value)
+	}
+
+	// Verify time is returned as epoch millis (matches Java client expectation).
+	firstTime, ok := timeList.Value[0].(*value.DecimalValue)
+	if !ok {
+		t.Fatal("expected DecimalValue in time list")
+	}
+	if firstTime.Value != now.UnixMilli() {
+		t.Errorf("expected first time=%d (epoch ms), got %d", now.UnixMilli(), firstTime.Value)
 	}
 }
 
@@ -729,7 +736,6 @@ func TestCounterPastTimeAll(t *testing.T) {
 	// Use current local time to match writer's timezone behavior
 	now := time.Now().Truncate(time.Second)
 	date := now.Format("20060102")
-	timeSec := int32(now.Hour()*3600 + now.Minute()*60 + now.Second())
 
 	for _, objHash := range []int32{1, 2} {
 		counters := map[string]value.Value{
@@ -757,12 +763,13 @@ func TestCounterPastTimeAll(t *testing.T) {
 	registry := NewRegistry()
 	RegisterCounterReadHandlers(registry, counterRD, objectCache, 30*time.Second)
 
+	// Java client sends stime/etime as epoch millis.
 	param := &pack.MapPack{}
 	param.PutStr("date", date)
 	param.PutStr("counter", "TPS")
 	param.PutStr("objType", "tomcat")
-	param.Put("stime", value.NewDecimalValue(int64(timeSec)))
-	param.Put("etime", value.NewDecimalValue(int64(timeSec)))
+	param.PutLong("stime", now.UnixMilli())
+	param.PutLong("etime", now.UnixMilli())
 
 	din := buildRequest(param)
 	dout := protocol.NewDataOutputX()

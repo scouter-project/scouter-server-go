@@ -26,15 +26,18 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 		date := param.GetText("date")
 		objHash := param.GetInt("objHash")
 		counterName := param.GetText("counter")
-		stime := int32(param.GetInt("stime"))
-		etime := int32(param.GetInt("etime"))
+		stime := param.GetLong("stime")
+		etime := param.GetLong("etime")
+
+		dateMidnightMs := util.DateToMillis(date)
+		startSec, endSec := toSecOfDayRange(stime, etime, dateMidnightMs)
 
 		timeList := value.NewListValue()
 		valueList := value.NewListValue()
 
-		counterRD.ReadRealtimeRange(date, objHash, stime, etime, func(timeSec int32, counters map[string]value.Value) {
+		counterRD.ReadRealtimeRange(date, objHash, startSec, endSec, func(timeSec int32, counters map[string]value.Value) {
 			if v, ok := counters[counterName]; ok {
-				timeList.Value = append(timeList.Value, value.NewDecimalValue(int64(timeSec)))
+				timeList.Value = append(timeList.Value, value.NewDecimalValue(dateMidnightMs+int64(timeSec)*util.MillisPerSecond))
 				valueList.Value = append(valueList.Value, v)
 			}
 		})
@@ -58,8 +61,11 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 		date := param.GetText("date")
 		counterName := param.GetText("counter")
 		objType := param.GetText("objType")
-		stime := int32(param.GetInt("stime"))
-		etime := int32(param.GetInt("etime"))
+		stime := param.GetLong("stime")
+		etime := param.GetLong("etime")
+
+		dateMidnightMs := util.DateToMillis(date)
+		startSec, endSec := toSecOfDayRange(stime, etime, dateMidnightMs)
 
 		live := objectCache.GetLive(deadTimeout)
 		for _, info := range live {
@@ -70,9 +76,9 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 			timeList := value.NewListValue()
 			valueList := value.NewListValue()
 
-			counterRD.ReadRealtimeRange(date, info.Pack.ObjHash, stime, etime, func(timeSec int32, counters map[string]value.Value) {
+			counterRD.ReadRealtimeRange(date, info.Pack.ObjHash, startSec, endSec, func(timeSec int32, counters map[string]value.Value) {
 				if v, ok := counters[counterName]; ok {
-					timeList.Value = append(timeList.Value, value.NewDecimalValue(int64(timeSec)))
+					timeList.Value = append(timeList.Value, value.NewDecimalValue(dateMidnightMs+int64(timeSec)*util.MillisPerSecond))
 					valueList.Value = append(valueList.Value, v)
 				}
 			})
@@ -176,8 +182,8 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 			return
 		}
 		date := util.FormatDate(stime)
-		startSec := int32(stime / 1000)
-		endSec := int32(etime / 1000)
+		dateMidnightMs := util.DateToMillis(date)
+		startSec, endSec := toSecOfDayRange(stime, etime, dateMidnightMs)
 
 		type aggEntry struct {
 			sum   float64
@@ -217,7 +223,7 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 		valueList := value.NewListValue()
 		for _, t := range times {
 			e := timeAgg[t]
-			timeList.Value = append(timeList.Value, value.NewDecimalValue(int64(t)))
+			timeList.Value = append(timeList.Value, value.NewDecimalValue(dateMidnightMs+int64(t)*util.MillisPerSecond))
 			v := e.sum
 			if mode == "avg" && e.count > 0 {
 				v = e.sum / float64(e.count)
@@ -247,8 +253,8 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 			return
 		}
 		date := util.FormatDate(stime)
-		startSec := int32(stime / 1000)
-		endSec := int32(etime / 1000)
+		dateMidnightMs := util.DateToMillis(date)
+		startSec, endSec := toSecOfDayRange(stime, etime, dateMidnightMs)
 
 		for _, hv := range objHashLv.Value {
 			dv, ok := hv.(*value.DecimalValue)
@@ -262,7 +268,7 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 
 			counterRD.ReadRealtimeRange(date, objHash, startSec, endSec, func(timeSec int32, counters map[string]value.Value) {
 				if v, ok := counters[counterName]; ok {
-					timeList.Value = append(timeList.Value, value.NewDecimalValue(int64(timeSec)))
+					timeList.Value = append(timeList.Value, value.NewDecimalValue(dateMidnightMs+int64(timeSec)*util.MillisPerSecond))
 					valueList.Value = append(valueList.Value, v)
 				}
 			})
@@ -613,6 +619,22 @@ func RegisterCounterReadHandlers(r *Registry, counterRD *counter.CounterRD, obje
 		dout.WriteByte(protocol.FLAG_HAS_NEXT)
 		pack.WritePack(dout, result)
 	})
+}
+
+// toSecOfDayRange converts an epoch-millis [stime, etime] range into the
+// [startSec, endSec] range of seconds-since-midnight used by the realtime
+// counter index. Values are clamped to [0, SecondsPerDay-1] so reads stay
+// within the day's keyspace even when the request spans midnight.
+func toSecOfDayRange(stime, etime, dateMidnightMs int64) (int32, int32) {
+	startSec := (stime - dateMidnightMs) / util.MillisPerSecond
+	endSec := (etime - dateMidnightMs) / util.MillisPerSecond
+	if startSec < 0 {
+		startSec = 0
+	}
+	if endSec > util.SecondsPerDay-1 {
+		endSec = util.SecondsPerDay - 1
+	}
+	return int32(startSec), int32(endSec)
 }
 
 func toFloat64(v value.Value) float64 {

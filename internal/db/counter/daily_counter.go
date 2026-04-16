@@ -204,6 +204,11 @@ func (d *DailyCounterData) ReadAll(objHash int32, counterName string) ([]float64
 	return values, nil
 }
 
+// Reload re-reads the index from disk to pick up new entries written by CounterWR.
+func (d *DailyCounterData) Reload() error {
+	return d.index.Reload()
+}
+
 func (d *DailyCounterData) Close() {
 	d.data.Close()
 	d.index.Close()

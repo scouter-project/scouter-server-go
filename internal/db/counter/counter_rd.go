@@ -4,23 +4,33 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/scouter-project/scouter-server-go/internal/protocol/value"
 )
 
 // CounterRD reads both realtime and daily counter data.
 type CounterRD struct {
-	mu           sync.Mutex
-	baseDir      string
-	realtimeDays map[string]*RealtimeCounterData
-	dailyDays    map[string]*DailyCounterData
+	mu             sync.Mutex
+	baseDir        string
+	realtimeDays   map[string]*RealtimeCounterData
+	dailyDays      map[string]*DailyCounterData
+	realtimeOpenAt map[string]time.Time // tracks when each realtime data was opened
+	dailyOpenAt    map[string]time.Time // tracks when each daily data was opened
 }
+
+const (
+	dailyRefreshInterval    = 10 * time.Second
+	realtimeRefreshInterval = 4 * time.Second
+)
 
 func NewCounterRD(baseDir string) *CounterRD {
 	return &CounterRD{
-		baseDir:      baseDir,
-		realtimeDays: make(map[string]*RealtimeCounterData),
-		dailyDays:    make(map[string]*DailyCounterData),
+		baseDir:        baseDir,
+		realtimeDays:   make(map[string]*RealtimeCounterData),
+		dailyDays:      make(map[string]*DailyCounterData),
+		realtimeOpenAt: make(map[string]time.Time),
+		dailyOpenAt:    make(map[string]time.Time),
 	}
 }
 
@@ -77,7 +87,19 @@ func (r *CounterRD) getRealtimeData(date string) (*RealtimeCounterData, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	now := time.Now()
+	today := now.Format("20060102")
+
 	if d, ok := r.realtimeDays[date]; ok {
+		// For today's date, periodically reload the in-memory index from disk
+		// because CounterWR has its own MemHashBlock that receives new writes
+		// and flushes to the same .hfile. Without reloading, the RD's index
+		// becomes stale and never sees newly written per-second entries —
+		// matching the "past data shows but new data doesn't" symptom.
+		if date == today && now.Sub(r.realtimeOpenAt[date]) > realtimeRefreshInterval {
+			d.Reload()
+			r.realtimeOpenAt[date] = now
+		}
 		return d, nil
 	}
 
@@ -91,6 +113,7 @@ func (r *CounterRD) getRealtimeData(date string) (*RealtimeCounterData, error) {
 		return nil, err
 	}
 	r.realtimeDays[date] = d
+	r.realtimeOpenAt[date] = now
 	return d, nil
 }
 
@@ -98,7 +121,20 @@ func (r *CounterRD) getDailyData(date string) (*DailyCounterData, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	now := time.Now()
+	today := now.Format("20060102")
+
 	if d, ok := r.dailyDays[date]; ok {
+		// For today's date, periodically reload the in-memory index from disk
+		// because CounterWR has its own MemHashBlock that receives new writes
+		// and flushes to the same .hfile. Without reloading, the RD's index
+		// becomes stale and can't find newly written entries.
+		// Note: we must NOT close+reopen because Close() would flush the RD's
+		// stale buffer to disk, overwriting the WR's current data.
+		if date == today && now.Sub(r.dailyOpenAt[date]) > dailyRefreshInterval {
+			d.Reload()
+			r.dailyOpenAt[date] = now
+		}
 		return d, nil
 	}
 
@@ -112,6 +148,7 @@ func (r *CounterRD) getDailyData(date string) (*DailyCounterData, error) {
 		return nil, err
 	}
 	r.dailyDays[date] = d
+	r.dailyOpenAt[date] = now
 	return d, nil
 }
 
@@ -126,6 +163,7 @@ func (r *CounterRD) PurgeOldDays(keepDates map[string]bool) {
 		}
 		d.Close()
 		delete(r.realtimeDays, date)
+		delete(r.realtimeOpenAt, date)
 	}
 	for date, d := range r.dailyDays {
 		if keepDates[date] {
@@ -133,6 +171,7 @@ func (r *CounterRD) PurgeOldDays(keepDates map[string]bool) {
 		}
 		d.Close()
 		delete(r.dailyDays, date)
+		delete(r.dailyOpenAt, date)
 	}
 }
 

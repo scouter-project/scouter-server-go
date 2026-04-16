@@ -173,6 +173,11 @@ func (r *RealtimeCounterData) Flush() error {
 	return r.data.Flush()
 }
 
+// Reload re-reads the index from disk to pick up new entries written by CounterWR.
+func (r *RealtimeCounterData) Reload() error {
+	return r.index.Reload()
+}
+
 func (r *RealtimeCounterData) Close() {
 	r.data.Close()
 	r.index.Close()

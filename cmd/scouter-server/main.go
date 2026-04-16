@@ -201,6 +201,7 @@ func main() {
 
 	xlogCore := core.NewXLogCore(xlogCache, xlogWR, profileWR, xlogGroupPerf, xlogOpts...)
 	perfCountCore := core.NewPerfCountCore(counterCache, counterWR)
+	perfCountCore.Auto5MSampling().Start(ctx)
 	profileCore := core.NewProfileCore(profileWR)
 	typeManager := scoutercounter.NewObjectTypeManager()
 	alertCore := core.NewAlertCore(alertWR, alertCache)

@@ -70,7 +70,12 @@
       "Bash(do du -sh \"$d\")",
       "Bash(tail:*)",
       "Bash(structlayout:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(protoc --version)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git -C /Users/nhn/IdeaProjects/scouter.server.go log --oneline -5)"
     ]
   }
 }
