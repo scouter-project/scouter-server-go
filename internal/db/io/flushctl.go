@@ -14,12 +14,12 @@ type IFlushable interface {
 
 // FlushController manages periodic flushing of registered IFlushable instances.
 var flushCtl = &flushController{
-	items: make(map[IFlushable]struct{}),
+	items: make(map[IFlushable]time.Time),
 }
 
 type flushController struct {
 	mu      sync.Mutex
-	items   map[IFlushable]struct{}
+	items   map[IFlushable]time.Time // value = last flush time
 	started bool
 }
 
@@ -30,7 +30,7 @@ func GetFlushController() *flushController {
 func (fc *flushController) Register(f IFlushable) {
 	fc.mu.Lock()
 	defer fc.mu.Unlock()
-	fc.items[f] = struct{}{}
+	fc.items[f] = time.Time{}
 	if !fc.started {
 		fc.started = true
 		go fc.run()
@@ -48,16 +48,20 @@ func (fc *flushController) run() {
 	defer ticker.Stop()
 	for range ticker.C {
 		fc.mu.Lock()
+		now := time.Now()
 		items := make([]IFlushable, 0, len(fc.items))
-		for f := range fc.items {
-			items = append(items, f)
+		for f, lastFlush := range fc.items {
+			if f.IsDirty() && now.Sub(lastFlush) >= f.Interval() {
+				items = append(items, f)
+			}
 		}
 		fc.mu.Unlock()
 
 		for _, f := range items {
-			if f.IsDirty() {
-				f.Flush()
-			}
+			f.Flush()
+			fc.mu.Lock()
+			fc.items[f] = time.Now()
+			fc.mu.Unlock()
 		}
 	}
 }

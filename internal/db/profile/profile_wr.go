@@ -27,7 +27,7 @@ type ProfileWR struct {
 
 func NewProfileWR(baseDir string, queueSize int) *ProfileWR {
 	if queueSize <= 0 {
-		queueSize = 1000
+		queueSize = 10000
 	}
 	return &ProfileWR{
 		baseDir: baseDir,
@@ -56,7 +56,7 @@ func (w *ProfileWR) Add(entry *ProfileEntry) {
 	select {
 	case w.queue <- entry:
 	default:
-		slog.Debug("ProfileWR: queue full, dropping")
+		slog.Warn("ProfileWR: queue full, dropping")
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"math"
+	"sync"
 )
 
 const (
@@ -18,6 +19,28 @@ type DataOutputX struct {
 	written int
 	writer  io.Writer // optional: when set, writes to stream instead of buffer
 	scratch [8]byte   // reusable scratch buffer — already on heap with the struct, avoids per-call allocation
+}
+
+var dataOutputXPool = sync.Pool{
+	New: func() any {
+		return &DataOutputX{buf: make([]byte, 0, 256)}
+	},
+}
+
+// AcquireDataOutputX returns a DataOutputX from the pool, ready for reuse.
+func AcquireDataOutputX() *DataOutputX {
+	o := dataOutputXPool.Get().(*DataOutputX)
+	o.Reset()
+	return o
+}
+
+// ReleaseDataOutputX returns a DataOutputX to the pool.
+// Do not use the DataOutputX after releasing; copy ToByteArray() before calling this.
+func ReleaseDataOutputX(o *DataOutputX) {
+	if o.writer != nil {
+		return
+	}
+	dataOutputXPool.Put(o)
 }
 
 func NewDataOutputX() *DataOutputX {
